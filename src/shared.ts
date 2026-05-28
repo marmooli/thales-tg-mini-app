@@ -11,6 +11,10 @@ export function normalizeUid(value: string) {
   return value.trim().replace(/\s+/g, '');
 }
 
+export function toPersianDigits(value: string | number) {
+  return String(value).replace(/\d/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[Number(digit)]);
+}
+
 export function isUidAllowedByFormat(value: string) {
   return /^[A-Za-z0-9_-]{4,32}$/.test(value);
 }
@@ -29,15 +33,15 @@ export function getDiscountAccessCopy(isVerified: boolean) {
   if (isVerified) {
     return {
       allowed: true,
-      title: 'XT Card $48 Discount',
+      title: 'دریافت تخفیف ۴۸ دلاری کارت XT',
       body: 'این مزیت فقط برای مشتریان تأییدشده ثالس فعال است. جزئیات کامل بعداً اضافه می‌شود.',
-      cta: 'باز کردن تخفیف XT Card $48',
+      cta: 'دریافت تخفیف ۴۸ دلاری کارت XT',
     } as const;
   }
 
   return {
     allowed: false,
-    title: 'XT Card $48 Discount',
+    title: 'دریافت تخفیف ۴۸ دلاری کارت XT',
     body: 'این بخش فقط پس از تأیید شناسه در دسترس است.',
     cta: 'تأیید شناسه XT',
   } as const;
