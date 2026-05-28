@@ -24,15 +24,15 @@
 
 :root {
   color-scheme: dark;
-  --bg: #050b12;
-  --bg-2: #09131d;
-  --panel: rgba(9, 16, 25, 0.72);
-  --panel-strong: rgba(11, 20, 31, 0.92);
-  --text: #eef4fb;
-  --muted: #8d9caf;
-  --accent: #48e0a5;
-  --accent-2: #f4b23b;
-  --border: rgba(148, 163, 184, 0.14);
+  --bg: #040404;
+  --bg-2: #0b0b0b;
+  --panel: rgba(16, 16, 16, 0.9);
+  --panel-strong: rgba(22, 22, 22, 0.96);
+  --text: #ffffff;
+  --muted: #c8c8c8;
+  --accent: #f4c430;
+  --accent-2: #ffd84d;
+  --border: rgba(255, 255, 255, 0.1);
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
 }
 
@@ -44,15 +44,15 @@ body {
   margin: 0;
   font-family: 'Kalameh', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background:
-    radial-gradient(circle at 18% 12%, rgba(72, 224, 165, 0.08), transparent 22%),
-    radial-gradient(circle at 82% 18%, rgba(244, 178, 59, 0.08), transparent 20%),
-    linear-gradient(180deg, #06101a 0%, var(--bg) 48%, var(--bg-2) 100%);
+    radial-gradient(circle at 18% 12%, rgba(244, 196, 48, 0.14), transparent 22%),
+    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.08), transparent 18%),
+    linear-gradient(180deg, #090909 0%, var(--bg) 46%, var(--bg-2) 100%);
   color: var(--text);
 }
 
 .app {
   min-height: 100vh;
-  padding: 28px 18px 36px;
+  padding: 14px 12px 20px;
   display: grid;
   place-items: center;
   position: relative;
@@ -60,20 +60,19 @@ body {
 }
 
 .frame {
-  width: min(100%, 560px);
+  width: min(100%, 460px);
   display: grid;
-  gap: 14px;
+  gap: 10px;
   position: relative;
   z-index: 1;
 }
 
 .card,
-.status,
 header {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 22px;
-  padding: 17px;
+  border-radius: 28px;
+  padding: 18px 18px 16px;
   box-shadow: var(--shadow);
   backdrop-filter: blur(20px);
 }
@@ -81,7 +80,7 @@ header {
 header h1,
 h2,
 p {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
 }
 
 .lead {
@@ -90,33 +89,38 @@ p {
   line-height: 1.9;
 }
 
+.page-message {
+  margin: 2px 2px 0;
+}
+
 label {
   display: grid;
-  gap: 8px;
-  margin: 12px 0;
+  gap: 7px;
+  margin: 10px 0;
+  font-size: 0.98rem;
 }
 
 input,
 button {
   font: inherit;
-  border-radius: 16px;
-  padding: 13px 16px;
+  border-radius: 18px;
+  padding: 15px 16px;
 }
 
 input {
   border: 1px solid var(--border);
-  background: rgba(5, 10, 17, 0.94);
+  background: rgba(255, 255, 255, 0.03);
   color: var(--text);
   outline: none;
 }
 
 input:focus {
-  border-color: rgba(72, 224, 165, 0.42);
-  box-shadow: 0 0 0 4px rgba(72, 224, 165, 0.1);
+  border-color: rgba(244, 196, 48, 0.52);
+  box-shadow: 0 0 0 4px rgba(244, 196, 48, 0.12);
 }
 
 input::placeholder {
-  color: #657488;
+  color: #a3a3a3;
 }
 
 button {
@@ -126,6 +130,7 @@ button {
   transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
   cursor: pointer;
+  min-height: 54px;
 }
 
 button:hover:not(:disabled) {
@@ -142,16 +147,13 @@ button:disabled {
 }
 
 .primary {
-  background: linear-gradient(135deg, #12b886, #0f766e);
+  background: linear-gradient(135deg, #f4c430, #d4a200);
+  color: #090909;
 }
 
 .secondary {
-  background: linear-gradient(135deg, #f4b23b, #b45309);
-}
-
-.hero {
-  display: grid;
-  gap: 10px;
+  background: linear-gradient(135deg, #ffffff, #d9d9d9);
+  color: #090909;
 }
 
 .eyebrow {
@@ -159,8 +161,8 @@ button:disabled {
   width: fit-content;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(72, 224, 165, 0.08);
-  color: #c8ffea;
+  background: rgba(244, 196, 48, 0.12);
+  color: #fff0ad;
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -173,55 +175,57 @@ button:disabled {
 .brand-row {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .brand-mark {
-  width: 46px;
-  height: 46px;
-  border-radius: 16px;
+  width: 52px;
+  height: 52px;
+  border-radius: 0;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, #12b886, #0f766e);
-  color: white;
+  background: transparent;
+  position: relative;
+  overflow: visible;
+  box-shadow: none;
+  flex: 0 0 auto;
+}
+
+.brand-mark-verified {
+  box-shadow: none;
+}
+
+.brand-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.verified-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #22c55e;
+  color: #04110a;
+  border: 2px solid #090909;
+  font-size: 0.72rem;
   font-weight: 900;
-  box-shadow: 0 10px 22px rgba(18, 184, 134, 0.18);
+  line-height: 1;
 }
 
 .panel-accent {
-  border-color: rgba(72, 224, 165, 0.14);
-  background: linear-gradient(180deg, rgba(11, 20, 31, 0.98), rgba(8, 15, 24, 0.88));
+  border-color: rgba(244, 196, 48, 0.18);
+  background: linear-gradient(180deg, rgba(24, 24, 24, 0.98), rgba(10, 10, 10, 0.88));
 }
 
-.status {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.status span {
-  color: var(--muted);
-}
-
-.status strong {
-  font-size: 1.05rem;
-  color: var(--text);
-}
-
-.status-not_verified strong {
-  color: #fb7185;
-}
-
-.status-pending_review strong {
-  color: #f4b23b;
-}
-
-.status-verified strong {
-  color: #48e0a5;
-}
-
-.status-rejected strong {
-  color: #f87171;
+.stack {
+  display: grid;
+  gap: 10px;
 }
 
 .section-title {
@@ -234,8 +238,8 @@ button:disabled {
 .section-title span {
   padding: 5px 9px;
   border-radius: 999px;
-  background: rgba(148, 163, 184, 0.08);
-  color: #c7d2e0;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f0f0f0;
   font-size: 0.85rem;
 }
 
@@ -253,7 +257,7 @@ button:disabled {
   left: -20px;
   width: 180px;
   height: 180px;
-  background: rgba(72, 224, 165, 0.12);
+  background: rgba(244, 196, 48, 0.16);
 }
 
 .backdrop-b {
@@ -261,7 +265,7 @@ button:disabled {
   bottom: 12%;
   width: 220px;
   height: 220px;
-  background: rgba(244, 178, 59, 0.1);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .masthead p {
@@ -277,22 +281,21 @@ button:disabled {
 }
 
 .feedback {
-  margin-top: 14px;
+  margin-top: 12px;
   color: var(--muted);
-  font-size: 0.96rem;
-  line-height: 1.7;
+  font-size: 0.92rem;
+  line-height: 1.65;
 }
 
 @media (max-width: 420px) {
   .app {
-    padding-inline: 14px;
+    padding: 10px 10px 16px;
   }
 
   .card,
-  .status,
   header {
-    border-radius: 18px;
-    padding: 15px;
+    border-radius: 24px;
+    padding: 16px 14px 14px;
   }
 
   .section-title {

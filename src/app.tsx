@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
 import { copy } from './copy';
+import { toPersianDigits } from './shared';
+
+const thalesRoundLogoUrl = '/assets/thales-logo-round-yellow.svg';
+const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
 type Status = 'not_verified' | 'pending_review' | 'verified' | 'rejected';
 
@@ -68,7 +72,7 @@ export function App() {
       if (!cancelled && !initData) {
         setLoading(false);
         setSessionState('missing');
-        setMessage('اطلاعات ورود تلگرام هنوز در دسترس نیست.');
+        setMessage(isLocalDev ? copy.welcome : 'اطلاعات ورود تلگرام هنوز در دسترس نیست.');
       }
     }, 10000);
 
@@ -122,11 +126,12 @@ export function App() {
 
   async function submitUid() {
     const currentInitData = initData || getTelegramInitData();
-    if (!currentInitData) {
+    if (!currentInitData && !isLocalDev) {
       setSessionState('missing');
       setSubmitFeedback('اطلاعات ورود تلگرام هنوز در دسترس نیست.');
       return;
     }
+    const initDataForSubmit = currentInitData || '';
     const normalized = uid.trim();
     if (!normalized) {
       setSubmitFeedback('لطفاً شناسه XT را وارد کنید.');
@@ -139,7 +144,7 @@ export function App() {
       const res = await fetch('/api/verify/xt-uid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData: currentInitData, xtUid: normalized }),
+        body: JSON.stringify({ initData: initDataForSubmit, xtUid: normalized }),
       });
       const data = (await res.json()) as
         | { ok: true; status: Status; message: string }
@@ -165,28 +170,17 @@ export function App() {
     }
   }
 
-  if (loading) return <Shell title={copy.title}>{copy.loading}</Shell>;
+  if (loading) return <Shell title={copy.title} verified={false}>{copy.loading}</Shell>;
 
   return (
-    <Shell title={copy.title}>
-      <section className="hero card">
-        <div className="eyebrow">Mini App مشتریان ثالس</div>
-        <p className="lead">{message}</p>
-        <p className="feedback">
-          {sessionState === 'ready'
-            ? 'وضعیت Telegram: آماده'
-            : sessionState === 'missing'
-              ? 'وضعیت Telegram: ناموجود'
-              : 'وضعیت Telegram: در حال دریافت'}
-        </p>
-        <StatusCard status={status} />
-      </section>
+    <Shell title={copy.title} verified={status === 'verified'}>
+      <p className="lead page-message">{message}</p>
 
       {status !== 'verified' ? (
-        <section className="card panel-accent">
+        <section className="card panel-accent stack">
           <div className="section-title">
             <h2>{copy.verify}</h2>
-            <span>مرحله ۱</span>
+            <span>مرحله {toPersianDigits(1)}</span>
           </div>
           <p>{copy.info}</p>
           <p>{copy.safety}</p>
@@ -211,12 +205,12 @@ export function App() {
               {submitting ? copy.loading : copy.submit}
             </button>
           </form>
-          {sessionState === 'missing' ? <p className="feedback">این Mini App باید از داخل Telegram و از دکمه‌ی Open Thales App باز شود.</p> : null}
+          {sessionState === 'missing' && !isLocalDev ? <p className="feedback">این Mini App باید از داخل Telegram و از دکمه‌ی Open Thales App باز شود.</p> : null}
           {submitFeedback ? <p className="feedback">{submitFeedback}</p> : null}
         </section>
       ) : null}
 
-      <section className="card">
+      <section className="card stack">
         <div className="section-title">
           <h2>{discountCopy?.title ?? copy.discountTitle}</h2>
           <span>{discountCopy?.allowed ? 'باز' : 'قفل'}</span>
@@ -234,7 +228,7 @@ export function App() {
   );
 }
 
-function Shell({ title, children }: { title: string; children: React.ReactNode }) {
+function Shell({ title, verified, children }: { title: string; verified: boolean; children: React.ReactNode }) {
   return (
     <main className="app">
       <div className="backdrop backdrop-a" />
@@ -242,31 +236,19 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
       <div className="frame">
         <header className="masthead card">
           <div className="brand-row">
-            <div className="brand-mark">T</div>
+            <div className={`brand-mark${verified ? ' brand-mark-verified' : ''}`}>
+              <img src={thalesRoundLogoUrl} alt="Thales" className="brand-logo" />
+              {verified ? <span className="verified-badge">✓</span> : null}
+            </div>
             <div>
               <h1>{title}</h1>
               <p>{copy.welcome}</p>
             </div>
           </div>
-          <div className="subtitle">دسترسی مشتریان، به زبان فارسی و با احراز هویت امن Telegram</div>
+          <div className="subtitle">نسخه موبایل‌محور برای مشتریان ثالس</div>
         </header>
         {children}
       </div>
     </main>
-  );
-}
-
-function StatusCard({ status }: { status: Status }) {
-  const map = {
-    not_verified: 'تأیید نشده',
-    pending_review: 'در حال بررسی',
-    verified: 'تأیید شده',
-    rejected: 'رد شده',
-  } as const;
-  return (
-    <section className={`card status status-${status}`}>
-      <span>{copy.currentStatus}</span>
-      <strong>{map[status]}</strong>
-    </section>
   );
 }
