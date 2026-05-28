@@ -183,7 +183,7 @@ async function verifyXtReferral(env: Env, xtUid: string, telegramUserId: string)
 }
 
 async function sendTelegramMessage(env: Env, chatId: number | string, text: string, replyMarkup?: unknown) {
-  await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+  const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -192,6 +192,10 @@ async function sendTelegramMessage(env: Env, chatId: number | string, text: stri
       reply_markup: replyMarkup,
     }),
   });
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Telegram sendMessage failed: ${response.status} ${body}`);
+  }
 }
 
 export default app;
