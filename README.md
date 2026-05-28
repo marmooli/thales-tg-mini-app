@@ -37,9 +37,14 @@ npm run dev:worker
 ## Cloudflare deployment path
 
 - Build the frontend with `npm run build`
-- Deploy the Worker/API and static assets with Wrangler
+- Deploy the Worker/API and static assets with Wrangler:
+
+```bash
+npx wrangler deploy
+```
 - Bind the D1 database using `wrangler.toml`
 - Apply the schema in `migrations/sqlite.sql`
+- No GitHub Actions deployment workflow is used in this repo.
 
 ## Notes
 
