@@ -5,6 +5,7 @@ main = "worker/index.ts"
 [vars]
 APP_BASE_URL = "https://thales-tg-mini-app.hamed-saffarian.workers.dev"
 TELEGRAM_BOT_USERNAME = "thales_miniapp_bot"
+XT_API_PROXY_BASE_URL = "https://xt-api.metagitic.com"
 
 [assets]
 directory = "./dist"

@@ -44,6 +44,7 @@ npx wrangler deploy
 ```
 - Bind the D1 database using `wrangler.toml`
 - Apply the schema in `migrations/sqlite.sql`
+- Configure `XT_API_PROXY_BASE_URL` if the proxy base URL changes from the default
 - No GitHub Actions deployment workflow is used in this repo.
 
 ## Notes

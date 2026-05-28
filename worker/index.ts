@@ -4,15 +4,16 @@ import {
   buildBotStartMessage,
   buildTelegramStartKeyboard,
   getDiscountAccessCopy,
-  isUidAllowedByFormat,
   normalizeUid,
   type VerificationStatus,
 } from '../src/shared';
+import { verifyXtReferral } from '../src/xt-verification';
 
 type Env = {
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_BOT_USERNAME: string;
   APP_BASE_URL: string;
+  XT_API_PROXY_BASE_URL?: string;
   DEV_BYPASS_TELEGRAM_AUTH?: string;
   DB: D1Database;
   ASSETS: Fetcher;
@@ -47,11 +48,20 @@ app.post('/api/verify/xt-uid', async (c) => {
   const auth = await authenticateTelegram(c.env, initData ?? '');
   if (!auth.ok) return c.json(auth, 401);
   const normalized = normalizeUid(xtUid ?? '');
-  if (!normalized || !isUidAllowedByFormat(normalized)) {
+  if (!normalized) {
     return c.json({ ok: false, message: 'شناسه XT معتبر نیست.' }, 400);
   }
-  const result = await verifyXtReferral(c.env, normalized, auth.user.telegramUserId);
-  return c.json({ ok: true, status: result.status, message: result.message });
+  const result = await verifyXtReferral(c.env, normalized, auth.user.telegramUserId, fallbackAllowlistCheck(c.env));
+  await persistVerificationAttempt(c.env, auth.user.telegramUserId, normalized, result);
+  await applyVerificationResult(c.env, auth.user.telegramUserId, normalized, result.status);
+  return c.json({
+    ok: true,
+    status: result.status,
+    message:
+      result.status === 'verified'
+        ? 'شناسه شما با موفقیت تأیید شد.'
+        : 'شناسه شما ثبت شد و در حال بررسی است.',
+  });
 });
 
 app.post('/api/feature/xt-card-48', async (c) => {
@@ -140,6 +150,45 @@ async function upsertUser(
     .run();
 }
 
+function fallbackAllowlistCheck(env: Env) {
+  return async (uid: string) => {
+    const row = await env.DB.prepare(`SELECT xt_uid FROM allowed_xt_uids WHERE xt_uid = ?`).bind(uid).first();
+    return Boolean(row);
+  };
+}
+
+async function persistVerificationAttempt(
+  env: Env,
+  telegramUserId: string,
+  xtUid: string,
+  result: Awaited<ReturnType<typeof verifyXtReferral>>,
+) {
+  const now = new Date().toISOString();
+  await env.DB.prepare(
+    `INSERT INTO uid_verification_attempts (telegram_user_id, xt_uid, status, source, raw_result, created_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+  )
+    .bind(telegramUserId, xtUid, result.status, result.source, JSON.stringify(result.rawResult), now)
+    .run();
+}
+
+async function applyVerificationResult(
+  env: Env,
+  telegramUserId: string,
+  xtUid: string,
+  status: VerificationStatus,
+) {
+  const now = new Date().toISOString();
+  const accessLevel = status === 'verified' ? 'verified_referral' : 'none';
+  await env.DB.prepare(
+    `UPDATE users
+     SET xt_uid = ?, verification_status = ?, access_level = ?, verified_at = CASE WHEN ? = 'verified' THEN ? ELSE verified_at END, updated_at = ?
+     WHERE telegram_user_id = ?`,
+  )
+    .bind(xtUid, status, accessLevel, status, now, now, telegramUserId)
+    .run();
+}
+
 async function getUser(env: Env, telegramUserId: string) {
   const row = await env.DB.prepare(`SELECT telegram_user_id, verification_status, access_level FROM users WHERE telegram_user_id = ?`)
     .bind(telegramUserId)
@@ -153,33 +202,6 @@ async function getUser(env: Env, telegramUserId: string) {
     verificationStatus: row?.verification_status ?? 'not_verified',
     accessLevel: row?.access_level ?? 'none',
   };
-}
-
-async function verifyXtReferral(env: Env, xtUid: string, telegramUserId: string) {
-  const allowed = await env.DB.prepare(`SELECT xt_uid FROM allowed_xt_uids WHERE xt_uid = ?`).bind(xtUid).first();
-  const now = new Date().toISOString();
-  const status: VerificationStatus = allowed ? 'verified' : 'pending_review';
-  const accessLevel = allowed ? 'verified_referral' : 'none';
-
-  await env.DB.prepare(
-    `UPDATE users
-     SET xt_uid = ?, verification_status = ?, access_level = ?, verified_at = CASE WHEN ? = 'verified' THEN ? ELSE verified_at END, updated_at = ?
-     WHERE telegram_user_id = ?`,
-  )
-    .bind(xtUid, status, accessLevel, status, now, now, telegramUserId)
-    .run();
-
-  await env.DB.prepare(
-    `INSERT INTO uid_verification_attempts (telegram_user_id, xt_uid, status, source, raw_result, created_at)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-  )
-    .bind(telegramUserId, xtUid, status, 'mvp_allowlist', JSON.stringify({ allowed: Boolean(allowed) }), now)
-    .run();
-
-  return {
-    status,
-    message: status === 'verified' ? 'شناسه شما با موفقیت تأیید شد.' : 'شناسه شما ثبت شد و در حال بررسی است.',
-  } as const;
 }
 
 async function sendTelegramMessage(env: Env, chatId: number | string, text: string, replyMarkup?: unknown) {
