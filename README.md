@@ -19,6 +19,8 @@ npm install
 ```
 
 2. Create a local env file from `.env.example`.
+   - For local testing, keep `APP_BASE_URL=http://localhost:5173`.
+   - For Telegram production deploys, use the Cloudflare Worker URL from `wrangler.toml`.
 
 3. For local development without a real Telegram session, set `DEV_BYPASS_TELEGRAM_AUTH=true`.
 
@@ -46,6 +48,7 @@ npx wrangler deploy
 - Apply the schema in `migrations/sqlite.sql`
 - Configure `XT_API_PROXY_BASE_URL` if the proxy base URL changes from the default
 - No GitHub Actions deployment workflow is used in this repo.
+- `APP_BASE_URL` in `wrangler.toml` is the production bot/webhook URL, while `.env` can keep the local `localhost` value for browser testing.
 
 ## Notes
 

@@ -3,6 +3,7 @@ compatibility_date = "2026-05-28"
 main = "worker/index.ts"
 
 [vars]
+# Production base URL used by the Telegram bot button/webhook flow.
 APP_BASE_URL = "https://thales-tg-mini-app.hamed-saffarian.workers.dev"
 TELEGRAM_BOT_USERNAME = "thales_miniapp_bot"
 XT_API_PROXY_BASE_URL = "https://xt-api.metagitic.com"
