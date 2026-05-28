@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { copy } from './copy';
 
 type Status = 'not_verified' | 'pending_review' | 'verified' | 'rejected';
@@ -35,9 +35,52 @@ export function App() {
   const [submitting, setSubmitting] = useState(false);
   const [features, setFeatures] = useState({ xtCard48Discount: false });
   const [discountCopy, setDiscountCopy] = useState<{ title: string; body: string; cta: string; allowed: boolean } | null>(null);
-  const initData = useMemo(() => getTelegramInitData(), []);
+  const [initData, setInitData] = useState('');
+  const [sessionState, setSessionState] = useState<'waiting' | 'ready' | 'missing'>('waiting');
 
   useEffect(() => {
+    let cancelled = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tg = (window as any).Telegram?.WebApp;
+    tg?.ready?.();
+    tg?.expand?.();
+
+    const syncInitData = () => {
+      const next = getTelegramInitData();
+      if (!cancelled && next) {
+        setInitData(next);
+        setSessionState('ready');
+        return true;
+      }
+      return false;
+    };
+
+    if (syncInitData()) return;
+
+    const timer = window.setInterval(() => {
+      if (syncInitData()) {
+        window.clearInterval(timer);
+      }
+    }, 100);
+
+    const timeout = window.setTimeout(() => {
+      window.clearInterval(timer);
+      if (!cancelled && !initData) {
+        setLoading(false);
+        setSessionState('missing');
+        setMessage('اطلاعات ورود تلگرام هنوز در دسترس نیست.');
+      }
+    }, 10000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      window.clearTimeout(timeout);
+    };
+  }, [initData]);
+
+  useEffect(() => {
+    if (!initData) return;
     void (async () => {
       try {
         const res = await fetch('/api/me', {
@@ -61,6 +104,7 @@ export function App() {
   }, [initData]);
 
   useEffect(() => {
+    if (!initData) return;
     void (async () => {
       try {
         const res = await fetch('/api/feature/xt-card-48', {
@@ -77,6 +121,12 @@ export function App() {
   }, [initData, features.xtCard48Discount]);
 
   async function submitUid() {
+    const currentInitData = initData || getTelegramInitData();
+    if (!currentInitData) {
+      setSessionState('missing');
+      setSubmitFeedback('اطلاعات ورود تلگرام هنوز در دسترس نیست.');
+      return;
+    }
     const normalized = uid.trim();
     if (!normalized) {
       setSubmitFeedback('لطفاً شناسه XT را وارد کنید.');
@@ -89,7 +139,7 @@ export function App() {
       const res = await fetch('/api/verify/xt-uid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, xtUid: normalized }),
+        body: JSON.stringify({ initData: currentInitData, xtUid: normalized }),
       });
       const data = (await res.json()) as
         | { ok: true; status: Status; message: string }
@@ -122,6 +172,13 @@ export function App() {
       <section className="hero card">
         <div className="eyebrow">Mini App مشتریان ثالس</div>
         <p className="lead">{message}</p>
+        <p className="feedback">
+          {sessionState === 'ready'
+            ? 'وضعیت Telegram: آماده'
+            : sessionState === 'missing'
+              ? 'وضعیت Telegram: ناموجود'
+              : 'وضعیت Telegram: در حال دریافت'}
+        </p>
         <StatusCard status={status} />
       </section>
 
@@ -154,6 +211,7 @@ export function App() {
               {submitting ? copy.loading : copy.submit}
             </button>
           </form>
+          {sessionState === 'missing' ? <p className="feedback">این Mini App باید از داخل Telegram و از دکمه‌ی Open Thales App باز شود.</p> : null}
           {submitFeedback ? <p className="feedback">{submitFeedback}</p> : null}
         </section>
       ) : null}

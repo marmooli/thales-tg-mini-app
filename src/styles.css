@@ -276,6 +276,13 @@ button:disabled {
   margin-bottom: 0;
 }
 
+.feedback {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 0.96rem;
+  line-height: 1.7;
+}
+
 @media (max-width: 420px) {
   .app {
     padding-inline: 14px;

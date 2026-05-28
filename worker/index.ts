@@ -85,6 +85,11 @@ app.post('/api/telegram/webhook', async (c) => {
 app.get('*', async (c) => c.env.ASSETS.fetch(c.req.raw));
 
 async function authenticateTelegram(env: Env, initData: string) {
+  console.log('telegram auth start', {
+    hasInitData: Boolean(initData),
+    initDataLength: initData.length,
+    bypass: env.DEV_BYPASS_TELEGRAM_AUTH === 'true',
+  });
   if (!initData && env.DEV_BYPASS_TELEGRAM_AUTH === 'true') {
     const telegramUserId = 'dev-demo-user';
     await upsertUser(env, {
@@ -97,16 +102,22 @@ async function authenticateTelegram(env: Env, initData: string) {
     return { ok: true, user: stored } as const;
   }
 
-  if (!initData) return { ok: false, message: 'ورود تلگرام معتبر نیست.' } as const;
+  if (!initData) return { ok: false, message: 'اطلاعات ورود تلگرام دریافت نشد.' } as const;
 
   const params = new URLSearchParams(initData);
   const hash = params.get('hash');
   const authDate = Number(params.get('auth_date') ?? 0);
   const userJson = params.get('user');
-  if (!hash || !authDate || !userJson) return { ok: false, message: 'ورود تلگرام معتبر نیست.' } as const;
+  console.log('telegram auth parsed', {
+    hasHash: Boolean(hash),
+    hasAuthDate: Boolean(authDate),
+    hasUser: Boolean(userJson),
+    authDate,
+  });
+  if (!hash || !authDate || !userJson) return { ok: false, message: 'اطلاعات ورود تلگرام ناقص است.' } as const;
 
   const ageSeconds = Math.floor(Date.now() / 1000) - authDate;
-  if (ageSeconds < 0 || ageSeconds > 86400) return { ok: false, message: 'ورود تلگرام منقضی شده است.' } as const;
+  if (ageSeconds < 0 || ageSeconds > 86400) return { ok: false, message: 'اطلاعات ورود تلگرام منقضی شده است.' } as const;
 
   const dataCheckString = [...params.entries()]
     .filter(([key]) => key !== 'hash')
@@ -114,11 +125,22 @@ async function authenticateTelegram(env: Env, initData: string) {
     .map(([k, v]) => `${k}=${v}`)
     .join('\n');
 
-  const botTokenHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(env.TELEGRAM_BOT_TOKEN));
-  const secret = await crypto.subtle.importKey('raw', botTokenHash, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const signature = await crypto.subtle.sign('HMAC', secret, new TextEncoder().encode(dataCheckString));
+  const webAppDataKey = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode('WebAppData'),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const secret = await crypto.subtle.sign('HMAC', webAppDataKey, new TextEncoder().encode(env.TELEGRAM_BOT_TOKEN));
+  const hmacKey = await crypto.subtle.importKey('raw', secret, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const signature = await crypto.subtle.sign('HMAC', hmacKey, new TextEncoder().encode(dataCheckString));
   const computed = [...new Uint8Array(signature)].map((b) => b.toString(16).padStart(2, '0')).join('');
-  if (computed !== hash) return { ok: false, message: 'ورود تلگرام معتبر نیست.' } as const;
+  console.log('telegram auth hash check', {
+    authDate,
+    computedMatches: computed === hash,
+  });
+  if (computed !== hash) return { ok: false, message: 'امضای ورود تلگرام معتبر نیست.' } as const;
 
   const user = JSON.parse(userJson) as { id: number; username?: string; first_name?: string; last_name?: string };
   const telegramUserId = String(user.id);
