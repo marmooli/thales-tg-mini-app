@@ -30,6 +30,7 @@ export function App() {
   const [status, setStatus] = useState<Status>('not_verified');
   const [uid, setUid] = useState('');
   const [message, setMessage] = useState(copy.welcome);
+  const [submitFeedback, setSubmitFeedback] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [features, setFeatures] = useState({ xtCard48Discount: false });
@@ -78,10 +79,11 @@ export function App() {
   async function submitUid() {
     const normalized = uid.trim();
     if (!normalized) {
-      setMessage('لطفاً شناسه XT را وارد کنید.');
+      setSubmitFeedback('لطفاً شناسه XT را وارد کنید.');
       return;
     }
 
+    setSubmitFeedback('در حال بررسی شناسه...');
     setSubmitting(true);
     try {
       const res = await fetch('/api/verify/xt-uid', {
@@ -94,6 +96,7 @@ export function App() {
         | { ok: false; message?: string };
       if (data.ok) {
         setStatus(data.status);
+        setSubmitFeedback(data.message);
         setMessage(
           data.status === 'verified'
             ? 'شناسه شما تأیید شد.'
@@ -103,10 +106,10 @@ export function App() {
         );
         setFeatures({ xtCard48Discount: data.status === 'verified' });
       } else {
-        setMessage(data.message ?? 'خطایی رخ داد.');
+        setSubmitFeedback(data.message ?? 'خطایی رخ داد.');
       }
     } catch {
-      setMessage('خطا در بررسی شناسه. لطفاً بعداً دوباره تلاش کنید.');
+      setSubmitFeedback('خطا در بررسی شناسه. لطفاً بعداً دوباره تلاش کنید.');
     } finally {
       setSubmitting(false);
     }
@@ -122,28 +125,38 @@ export function App() {
         <StatusCard status={status} />
       </section>
 
-      <section className="card panel-accent">
-        <div className="section-title">
-          <h2>{copy.verify}</h2>
-          <span>مرحله ۱</span>
-        </div>
-        <p>{copy.info}</p>
-        <p>{copy.safety}</p>
-        <label>
-          {copy.uidLabel}
-          <input
-            value={uid}
-            onChange={(e) => setUid(e.target.value)}
-            placeholder={copy.uidPlaceholder}
-            inputMode="text"
-            autoComplete="off"
-            spellCheck={false}
-          />
-        </label>
-        <button className="primary" onClick={submitUid} disabled={submitting}>
-          {submitting ? copy.loading : copy.submit}
-        </button>
-      </section>
+      {status !== 'verified' ? (
+        <section className="card panel-accent">
+          <div className="section-title">
+            <h2>{copy.verify}</h2>
+            <span>مرحله ۱</span>
+          </div>
+          <p>{copy.info}</p>
+          <p>{copy.safety}</p>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void submitUid();
+            }}
+          >
+            <label>
+              {copy.uidLabel}
+              <input
+                value={uid}
+                onChange={(e) => setUid(e.target.value)}
+                placeholder={copy.uidPlaceholder}
+                inputMode="text"
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </label>
+            <button className="primary" type="submit" disabled={submitting}>
+              {submitting ? copy.loading : copy.submit}
+            </button>
+          </form>
+          {submitFeedback ? <p className="feedback">{submitFeedback}</p> : null}
+        </section>
+      ) : null}
 
       <section className="card">
         <div className="section-title">
