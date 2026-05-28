@@ -2,6 +2,10 @@ name = "thales-tg-mini-app"
 compatibility_date = "2026-05-28"
 main = "worker/index.ts"
 
+[vars]
+APP_BASE_URL = "https://thales-tg-mini-app.hamed-saffarian.workers.dev"
+TELEGRAM_BOT_USERNAME = "thales_miniapp_bot"
+
 [assets]
 directory = "./dist"
 binding = "ASSETS"
@@ -9,4 +13,4 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "thales_tg_mini_app"
-database_id = "REPLACE_ME"
+database_id = "625ac5d9-d750-4a99-a7c8-45df7414fd7e"
