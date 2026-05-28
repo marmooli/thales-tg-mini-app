@@ -1,27 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
+import { copy } from './copy';
 
 type Status = 'not_verified' | 'pending_review' | 'verified' | 'rejected';
 
 type MeResponse =
-  | { ok: true; user: { telegramUserId: string; verificationStatus: Status; accessLevel: string; features: { xtCard48Discount: boolean } } }
+  | {
+      ok: true;
+      user: {
+        telegramUserId: string;
+        verificationStatus: Status;
+        accessLevel: string;
+        features: { xtCard48Discount: boolean };
+      };
+    }
   | { ok: false; message: string };
 
-const copy = {
-  title: 'اپلیکیشن مشتری ثالس',
-  welcome: 'برای دسترسی به مزایای مشتریان، لطفاً شناسه XT خود را تأیید کنید.',
-  currentStatus: 'وضعیت فعلی',
-  verify: 'تأیید شناسه XT',
-  openDiscount: 'باز کردن تخفیف XT Card $48',
-  submit: 'ارسال شناسه',
-  uidLabel: 'شناسه XT',
-  uidPlaceholder: 'شناسه XT را وارد کنید',
-  info: 'ما فقط از شناسه XT شما برای بررسی ثبت‌نام از مسیر معرفی ثالس استفاده می‌کنیم.',
-  safety: 'ما به حساب، موجودی، رمز عبور یا داده‌های معاملاتی شما دسترسی نداریم.',
-  discountTitle: 'XT Card $48 Discount',
-  discountBody: 'این مزیت فقط برای مشتریان تأییدشده ثالس فعال است. جزئیات کامل بعداً اضافه می‌شود.',
-  locked: 'این بخش فقط پس از تأیید شناسه در دسترس است.',
-  loading: 'در حال بررسی...',
-};
+type FeatureResponse =
+  | { ok: true; allowed: boolean; title: string; body: string; cta: string }
+  | { ok: false; message: string };
 
 function getTelegramInitData() {
   // Telegram WebApp injects this at runtime. In local dev we allow empty initData.
@@ -37,6 +33,7 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [features, setFeatures] = useState({ xtCard48Discount: false });
+  const [discountCopy, setDiscountCopy] = useState<{ title: string; body: string; cta: string; allowed: boolean } | null>(null);
   const initData = useMemo(() => getTelegramInitData(), []);
 
   useEffect(() => {
@@ -47,7 +44,7 @@ export function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ initData }),
         });
-      const data = (await res.json()) as MeResponse;
+        const data = (await res.json()) as MeResponse;
         if (data.ok) {
           setStatus(data.user.verificationStatus);
           setFeatures(data.user.features);
@@ -62,12 +59,29 @@ export function App() {
     })();
   }, [initData]);
 
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch('/api/feature/xt-card-48', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData }),
+        });
+        const data = (await res.json()) as FeatureResponse;
+        if (data.ok) setDiscountCopy(data);
+      } catch {
+        setDiscountCopy(null);
+      }
+    })();
+  }, [initData, features.xtCard48Discount]);
+
   async function submitUid() {
     const normalized = uid.trim();
     if (!normalized) {
       setMessage('لطفاً شناسه XT را وارد کنید.');
       return;
     }
+
     setSubmitting(true);
     try {
       const res = await fetch('/api/verify/xt-uid', {
@@ -102,31 +116,47 @@ export function App() {
 
   return (
     <Shell title={copy.title}>
-      <p className="lead">{message}</p>
-      <StatusCard status={status} />
+      <section className="hero card">
+        <div className="eyebrow">Mini App مشتریان ثالس</div>
+        <p className="lead">{message}</p>
+        <StatusCard status={status} />
+      </section>
 
-      <section className="card">
-        <h2>{copy.verify}</h2>
+      <section className="card panel-accent">
+        <div className="section-title">
+          <h2>{copy.verify}</h2>
+          <span>مرحله ۱</span>
+        </div>
         <p>{copy.info}</p>
         <p>{copy.safety}</p>
         <label>
           {copy.uidLabel}
-          <input value={uid} onChange={(e) => setUid(e.target.value)} placeholder={copy.uidPlaceholder} />
+          <input
+            value={uid}
+            onChange={(e) => setUid(e.target.value)}
+            placeholder={copy.uidPlaceholder}
+            inputMode="text"
+            autoComplete="off"
+            spellCheck={false}
+          />
         </label>
-        <button onClick={submitUid} disabled={submitting}>
+        <button className="primary" onClick={submitUid} disabled={submitting}>
           {submitting ? copy.loading : copy.submit}
         </button>
       </section>
 
       <section className="card">
-        <h2>{copy.discountTitle}</h2>
-        {features.xtCard48Discount ? (
+        <div className="section-title">
+          <h2>{discountCopy?.title ?? copy.discountTitle}</h2>
+          <span>{discountCopy?.allowed ? 'باز' : 'قفل'}</span>
+        </div>
+        {discountCopy?.allowed ? (
           <>
-            <p>{copy.discountBody}</p>
-            <button>{copy.openDiscount}</button>
+            <p>{discountCopy.body}</p>
+            <button className="secondary">{discountCopy.cta}</button>
           </>
         ) : (
-          <p>{copy.locked}</p>
+          <p>{discountCopy?.body ?? copy.locked}</p>
         )}
       </section>
     </Shell>
@@ -136,10 +166,18 @@ export function App() {
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <main className="app">
+      <div className="backdrop backdrop-a" />
+      <div className="backdrop backdrop-b" />
       <div className="frame">
-        <header>
-          <h1>{title}</h1>
-          <p>{copy.welcome}</p>
+        <header className="masthead card">
+          <div className="brand-row">
+            <div className="brand-mark">T</div>
+            <div>
+              <h1>{title}</h1>
+              <p>{copy.welcome}</p>
+            </div>
+          </div>
+          <div className="subtitle">دسترسی مشتریان، به زبان فارسی و با احراز هویت امن Telegram</div>
         </header>
         {children}
       </div>
@@ -155,7 +193,7 @@ function StatusCard({ status }: { status: Status }) {
     rejected: 'رد شده',
   } as const;
   return (
-    <section className="card status">
+    <section className={`card status status-${status}`}>
       <span>{copy.currentStatus}</span>
       <strong>{map[status]}</strong>
     </section>
