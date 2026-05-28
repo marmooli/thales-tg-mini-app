@@ -1,0 +1,29 @@
+{
+  "name": "thales-tg-mini-app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:worker": "wrangler dev --local --port 8787",
+    "build": "vite build",
+    "preview": "vite preview",
+    "cf-typecheck": "tsc --noEmit",
+    "db:schema": "echo Apply schema in migrations/sqlite.sql to your D1 database"
+  },
+  "dependencies": {
+    "hono": "^4.6.10",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250224.0",
+    "@types/react": "^18.3.12",
+    "@types/node": "^22.9.0",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "wrangler": "^3.86.0"
+  }
+}

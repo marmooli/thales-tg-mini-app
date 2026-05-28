@@ -1,0 +1,7 @@
+.codex
+.agent
+openspec
+migrations
+worker
+README.md
+.env.example
