@@ -345,6 +345,82 @@ button:disabled {
   align-items: start;
 }
 
+.route-card-guide {
+  min-height: calc(100vh - 186px);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 14px;
+}
+
+.route-guide-hero {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  min-height: 0;
+}
+
+.route-guide-title {
+  margin-bottom: 0;
+}
+
+.route-guide-copy {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.85;
+}
+
+.route-guide-footnote {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.route-guide-media {
+  min-height: 0;
+  border-radius: 22px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.route-guide-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center top;
+}
+
+.route-guide-back {
+  margin-top: auto;
+}
+
+.route-guide-links {
+  margin-top: 4px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.route-guide-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  text-align: center;
+  width: 100%;
+}
+
+.route-guide-button {
+  background: linear-gradient(135deg, #f4c430, #d4a200);
+  color: #090909;
+  box-shadow: 0 10px 20px rgba(244, 196, 48, 0.18);
+}
+
+.route-guide-button:hover:not(:disabled) {
+  box-shadow: 0 12px 24px rgba(244, 196, 48, 0.22);
+}
+
 @media (max-width: 420px) {
   .app {
     padding: 10px 10px 16px;
@@ -363,6 +439,10 @@ button:disabled {
 
   .xt-helper-actions {
     grid-template-columns: 1fr;
+  }
+
+  .route-card-guide {
+    min-height: calc(100vh - 172px);
   }
 }
 

@@ -11,6 +11,8 @@ import {
 import { normalizeUid } from './shared';
 
 const thalesRoundLogoUrl = '/assets/thales-logo-round-yellow.svg';
+const xtUidGuideImageUrl = '/assets/xt-uid-guide-v2.jpg';
+const xtRegistrationLink = 'https://www.xtcorenet.com/fa/accounts/register?ref=THALES';
 const isLocalDev =
   import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
@@ -293,6 +295,30 @@ function MiniApp() {
   }
 
   if (route !== 'main') {
+    if (route === 'xt-uid-help') {
+      return (
+        <Shell title={copy.title} verified={status === 'verified'}>
+          <RouteGuidePage
+            title={getXtUidFlowPageTitle(route)}
+            imageSrc={xtUidGuideImageUrl}
+            imageAlt="راهنمای پیدا کردن UID"
+            onBack={() => navigateTo(setRoute, '/')}
+          />
+        </Shell>
+      );
+    }
+
+    if (route === 'xt-registration-guide') {
+      return (
+        <Shell title={copy.title} verified={status === 'verified'}>
+          <RouteRegistrationGuidePage
+            title={getXtUidFlowPageTitle(route)}
+            onBack={() => navigateTo(setRoute, '/')}
+          />
+        </Shell>
+      );
+    }
+
     return (
       <Shell title={copy.title} verified={status === 'verified'}>
         <RoutePlaceholderPage
@@ -445,6 +471,82 @@ export function RoutePlaceholderPage({ title, onBack }: { title: string; onBack:
         <h2>{title}</h2>
       </div>
       <button className="secondary xt-helper-button" type="button" onClick={onBack}>
+        {getXtUidFlowBackLabel()}
+      </button>
+    </section>
+  );
+}
+
+function RouteGuidePage({
+  title,
+  imageSrc,
+  imageAlt,
+  onBack,
+}: {
+  title: string;
+  imageSrc: string;
+  imageAlt: string;
+  onBack: () => void;
+}) {
+  return (
+    <section className="card route-card route-card-guide">
+      <div className="route-guide-hero">
+        <div className="section-title route-guide-title">
+          <h2>{title}</h2>
+        </div>
+        <div className="route-guide-media">
+          <img src={imageSrc} alt={imageAlt} className="route-guide-image" />
+        </div>
+      </div>
+      <button className="secondary xt-helper-button route-guide-back route-guide-button" type="button" onClick={onBack}>
+        {getXtUidFlowBackLabel()}
+      </button>
+    </section>
+  );
+}
+
+function RouteRegistrationGuidePage({ title, onBack }: { title: string; onBack: () => void }) {
+  return (
+    <section className="card route-card route-card-guide route-card-registration">
+      <div className="route-guide-hero">
+        <div className="section-title route-guide-title">
+          <h2>{title}</h2>
+        </div>
+        <p className="route-guide-copy">
+          به علت مسائل فیلترینگ یا قطع اینترنت در ایران ممکن است گاهی برخی از لینک‌های زیر کار نکنند. اگر یک لینک کار
+          نکرد لینک‌های دیگر را هم امتحان کنید.
+        </p>
+        <div className="xt-helper-actions route-guide-links">
+          <a
+            className="secondary xt-helper-button route-guide-link route-guide-button"
+            href={xtRegistrationLink}
+            target="_blank"
+            rel="noreferrer"
+          >
+            لینک اینترنت داخلی برای داخل ایران
+          </a>
+          <a
+            className="secondary xt-helper-button route-guide-link route-guide-button"
+            href={xtRegistrationLink}
+            target="_blank"
+            rel="noreferrer"
+          >
+            لینک کاربران داخل ایران (اینترنت بین‌المللی)
+          </a>
+          <a
+            className="secondary xt-helper-button route-guide-link route-guide-button"
+            href={xtRegistrationLink}
+            target="_blank"
+            rel="noreferrer"
+          >
+            لینک کاربران خارج از ایران
+          </a>
+        </div>
+        <p className="route-guide-copy route-guide-footnote">
+          پس از بازکردن حساب با کد طالس مجدداً به مینی‌اپ بازگردید و ارسال شناسه را تکمیل کنید.
+        </p>
+      </div>
+      <button className="secondary xt-helper-button route-guide-back route-guide-button" type="button" onClick={onBack}>
         {getXtUidFlowBackLabel()}
       </button>
     </section>
