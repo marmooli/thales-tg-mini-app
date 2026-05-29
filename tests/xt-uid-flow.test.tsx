@@ -45,17 +45,41 @@ describe('xt uid flow helpers', () => {
     expect(shouldRevealXtUidSupport(3)).toBe(true);
   });
 
-  it('renders helper placeholder content with only a title and back button', async () => {
+  it('renders helper pages with their expected content and back actions', async () => {
     vi.stubGlobal('window', {
       location: { hostname: 'localhost', pathname: '/' },
     } as Window);
 
-    const { RoutePlaceholderPage } = await import('../src/app');
+    const { RoutePlaceholderPage, RouteGuidePage, RouteRegistrationGuidePage } = await import('../src/app');
     const html = renderToStaticMarkup(
       <RoutePlaceholderPage title="راهنمای پیدا کردن UID" onBack={() => undefined} />,
     );
 
     expect(html).toContain('راهنمای پیدا کردن UID');
     expect(html).toContain('بازگشت');
+
+    const guideHtml = renderToStaticMarkup(
+      <RouteGuidePage
+        title="راهنمای پیدا کردن UID"
+        imageSrc="/assets/xt-uid-guide-v2.jpg"
+        imageAlt="راهنمای پیدا کردن UID"
+        onBack={() => undefined}
+      />,
+    );
+
+    expect(guideHtml).toContain('/assets/xt-uid-guide-v2.jpg');
+    expect(guideHtml).toContain('راهنمای پیدا کردن UID');
+    expect(guideHtml).toContain('بازگشت');
+
+    const registrationHtml = renderToStaticMarkup(
+      <RouteRegistrationGuidePage title="راهنمای ثبت‌نام با کد طالس" onBack={() => undefined} />,
+    );
+
+    expect(registrationHtml).toContain('به علت مسائل فیلترینگ یا قطع اینترنت در ایران');
+    expect(registrationHtml).toContain('لینک اینترنت داخلی برای داخل ایران');
+    expect(registrationHtml).toContain('لینک کاربران داخل ایران (اینترنت بین‌المللی)');
+    expect(registrationHtml).toContain('لینک کاربران خارج از ایران');
+    expect(registrationHtml).toContain('پس از بازکردن حساب با کد طالس مجدداً به مینی‌اپ بازگردید');
+    expect(registrationHtml).toContain('https://www.xtcorenet.com/fa/accounts/register?ref=THALES');
   });
 });

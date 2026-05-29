@@ -12,17 +12,17 @@ The system MUST present a guided XT-UID verification screen with a clear heading
 - **AND** it MUST reserve a visible inline area directly under the input field for validation and submit feedback
 
 ### Requirement: Offer self-service helper pages
-The system MUST provide helper actions for UID discovery and registration guidance, each opening a dedicated placeholder page with only a title and a back button.
+The system MUST provide helper actions for UID discovery and registration guidance.
 
 #### Scenario: UID help opens
 - **WHEN** the user selects `راهنمای پیدا کردن UID`
 - **THEN** the system MUST navigate to the `/xt-uid-help` route
-- **AND** it MUST show only the helper page title and a back button
+- **AND** it MUST show the helper page title, the UID guide image, and a back button
 
 #### Scenario: Referral help opens
 - **WHEN** the user selects `راهنمای ثبت‌نام با کد طالس`
 - **THEN** the system MUST navigate to the `/xt-registration-guide` route
-- **AND** it MUST show only the helper page title and a back button
+- **AND** it MUST show the helper page title, the registration guidance copy, the registration link buttons, and a back button
 
 ### Requirement: Reveal support only after three failed attempts in the same session
 The system MUST reveal a `تماس با پشتیبانی` action only after three failed XT-UID verification attempts for the same user in the same session.

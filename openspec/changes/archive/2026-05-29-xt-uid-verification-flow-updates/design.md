@@ -39,15 +39,15 @@ Alternatives considered:
 - Separate session table: possible, but unnecessary for the MVP because the existing attempt log can carry the extra session dimension.
 - Derive the count purely from UI state: rejected because it would not be auditable.
 
-### 3. Keep helper and support destinations as empty routes with a back button
-The helper actions will route to simple standalone pages that only show a title and a back button.
+### 3. Keep helper and support destinations as route-backed pages with lightweight content
+The helper actions will route to standalone pages. The UID help page will show the guide image and a back button, while the registration guide page will show guidance copy, registration link buttons, and a back button.
 
 Route plan:
 - `/xt-uid-help`
 - `/xt-registration-guide`
 - `/support`
 
-Rationale: these pages are placeholders for future content, but they let the UX be explicit now and give us concrete routes for testing.
+Rationale: these pages are still lightweight, but they now carry the concrete guidance needed for the current flow and remain route-backed for testing and future extension.
 
 Alternatives considered:
 - Open a modal instead of a route: rejected because route-backed pages are easier to test and extend later.

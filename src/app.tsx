@@ -477,7 +477,7 @@ export function RoutePlaceholderPage({ title, onBack }: { title: string; onBack:
   );
 }
 
-function RouteGuidePage({
+export function RouteGuidePage({
   title,
   imageSrc,
   imageAlt,
@@ -505,7 +505,7 @@ function RouteGuidePage({
   );
 }
 
-function RouteRegistrationGuidePage({ title, onBack }: { title: string; onBack: () => void }) {
+export function RouteRegistrationGuidePage({ title, onBack }: { title: string; onBack: () => void }) {
   return (
     <section className="card route-card route-card-guide route-card-registration">
       <div className="route-guide-hero">

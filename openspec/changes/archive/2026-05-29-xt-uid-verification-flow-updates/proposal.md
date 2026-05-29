@@ -10,9 +10,9 @@ The current XT UID verification screen is functional but too generic for the int
 - Add two small helper actions:
   - `راهنمای پیدا کردن UID`
   - `راهنمای ثبت‌نام با کد طالس`
-- Route each helper action to a dedicated empty page with only a title and a back button for now. Proposed routes: `/xt-uid-help` and `/xt-registration-guide`.
+- Route each helper action to a dedicated route-backed page. The UID help page shows the guide image and a back button, while the registration guide page shows guidance copy, registration link buttons, and a back button. Proposed routes: `/xt-uid-help` and `/xt-registration-guide`.
 - Track failed verification attempts within the same user session and, after three failed attempts for that user in the same session, reveal a `تماس با پشتیبانی` action.
-- Route the support action to a dedicated empty page with only a title and a back button for now. Proposed route: `/support`.
+- Route the support action to a dedicated route-backed page with only a title and a back button for now. Proposed route: `/support`.
 - Continue logging user interaction events in the database so the flow remains auditable and supportable.
 
 ## Capabilities
