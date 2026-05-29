@@ -63,6 +63,10 @@ describe('xt uid flow helpers', () => {
     expect(html).toContain('شروع فرایند دریافت تخفیف ۳۸ دلاری');
     expect(html).toContain('/assets/monitor-card.jpg');
     expect(html).toContain('/assets/card-mobile-vertical.jpg');
+    expect(html).toContain('campaign-hero');
+    expect(html).toContain('campaign-grid');
+    expect(html).toContain('campaign-callout');
+    expect(html).toContain('campaign-footnote');
   });
 
   it('renders helper pages with their expected content and back actions', async () => {

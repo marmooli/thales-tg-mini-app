@@ -16,7 +16,7 @@ type XtCampaignLandingPageProps = {
 
 export function XtCampaignLandingPage({ onOpenDiscountProcess, onBack }: XtCampaignLandingPageProps) {
   return (
-    <section className="card stack route-card route-card-campaign">
+    <section className="campaign-page">
       <div className="campaign-shell">
         <div className="campaign-hero">
           <div className="campaign-hero-copy">

@@ -370,6 +370,12 @@ button:disabled {
   border-color: rgba(248, 113, 113, 0.34);
 }
 
+.campaign-page {
+  display: grid;
+  gap: 14px;
+  min-height: calc(100vh - 186px);
+}
+
 .route-card-campaign {
   min-height: calc(100vh - 186px);
   display: grid;
@@ -465,8 +471,13 @@ button:disabled {
 }
 
 .campaign-entry-button {
-  width: 100%;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  width: 100%;
+  text-decoration: none;
+  color: #090909;
+  box-sizing: border-box;
 }
 
 .campaign-entry-card .status-lock {

@@ -25,6 +25,7 @@ const supportTelegramUrl = 'https://t.me/Ssameti';
 const xtRegistrationLinkDomestic = 'https://www.xtcorenet.com/fa/accounts/register?ref=THALES3';
 const xtRegistrationLinkInternational = 'https://www.xtfarsi.net/fa/accounts/register?ref=THALES3';
 const xtRegistrationLinkOutsideIran = 'https://www.xt.com/fa/accounts/register?ref=THALES3';
+const xtCampaignLandingUrl = 'https://thales.solutions/campaigns/xt-card/';
 const isLocalDev =
   import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
@@ -578,9 +579,11 @@ function MiniApp() {
           <div className="campaign-entry-copy">
             <p>کارت XT چیست و چه مزایایی دارد</p>
             <button
-              className="primary campaign-entry-button"
+              className="primary verification-entry-button campaign-entry-button"
               type="button"
-              onClick={() => navigateTo(setRoute, XT_CAMPAIGN_ROUTE_PATH)}
+              onClick={() => {
+                window.location.href = xtCampaignLandingUrl;
+              }}
             >
               معرفی کارت اعتباری XT
             </button>
