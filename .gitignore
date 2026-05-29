@@ -7,3 +7,5 @@ dist/
 .env.local
 .env.*.local
 .env
+.dev.vars
+.dev.vars.local

@@ -7,6 +7,7 @@ import {
   normalizeUid,
   type VerificationStatus,
 } from '../src/shared';
+import { logCrmEvent, registerCrmRoutes } from '../src/crm-server';
 import { verifyXtReferral } from '../src/xt-verification';
 
 type Env = {
@@ -15,11 +16,16 @@ type Env = {
   APP_BASE_URL: string;
   XT_API_PROXY_BASE_URL?: string;
   DEV_BYPASS_TELEGRAM_AUTH?: string;
+  CRM_SESSION_SECRET?: string;
+  CRM_BOOTSTRAP_USERNAME?: string;
+  CRM_BOOTSTRAP_PASSWORD?: string;
+  CRM_BOOTSTRAP_ROLE?: string;
   DB: D1Database;
   ASSETS: Fetcher;
 };
 
 const app = new Hono<{ Bindings: Env }>();
+registerCrmRoutes(app);
 
 app.post('/api/auth/telegram', async (c) => {
   const { initData } = await c.req.json<{ initData?: string }>().catch(() => ({ initData: '' }));
@@ -49,11 +55,35 @@ app.post('/api/verify/xt-uid', async (c) => {
   if (!auth.ok) return c.json(auth, 401);
   const normalized = normalizeUid(xtUid ?? '');
   if (!normalized) {
+    await logCrmEvent(c.env, {
+      eventType: 'uid_submit',
+      telegramUserId: auth.user.telegramUserId,
+      title: 'ثبت شناسه XT نامعتبر',
+      details: { reason: 'missing_or_empty_uid' },
+    });
     return c.json({ ok: false, message: 'شناسه XT معتبر نیست.' }, 400);
   }
+  await logCrmEvent(c.env, {
+    eventType: 'uid_submit',
+    telegramUserId: auth.user.telegramUserId,
+    xtUid: normalized,
+    title: 'ثبت شناسه XT',
+    details: { xtUid: normalized },
+  });
   const result = await verifyXtReferral(c.env, normalized, auth.user.telegramUserId, fallbackAllowlistCheck(c.env));
   await persistVerificationAttempt(c.env, auth.user.telegramUserId, normalized, result);
   await applyVerificationResult(c.env, auth.user.telegramUserId, normalized, result.status);
+  await logCrmEvent(c.env, {
+    eventType: result.status === 'verified' ? 'uid_verified' : 'uid_pending_review',
+    telegramUserId: auth.user.telegramUserId,
+    xtUid: normalized,
+    title: result.status === 'verified' ? 'شناسه XT تأیید شد' : 'شناسه XT در انتظار بررسی است',
+    details: {
+      source: result.source,
+      rawResult: result.rawResult,
+      fallbackUsed: result.fallbackUsed,
+    },
+  });
     return c.json({
       ok: true,
       status: result.status,
@@ -99,10 +129,23 @@ async function authenticateTelegram(env: Env, initData: string) {
       lastName: 'User',
     });
     const stored = await getUser(env, telegramUserId);
+    await logCrmEvent(env, {
+      eventType: 'telegram_auth_success',
+      telegramUserId,
+      title: 'ورود تلگرام موفق',
+      details: { bypass: true },
+    });
     return { ok: true, user: stored } as const;
   }
 
-  if (!initData) return { ok: false, message: 'اطلاعات ورود تلگرام دریافت نشد.' } as const;
+  if (!initData) {
+    await logCrmEvent(env, {
+      eventType: 'telegram_auth_failed',
+      title: 'ورود تلگرام ناموفق',
+      details: { reason: 'missing_initData' },
+    });
+    return { ok: false, message: 'اطلاعات ورود تلگرام دریافت نشد.' } as const;
+  }
 
   const params = new URLSearchParams(initData);
   const hash = params.get('hash');
@@ -114,10 +157,24 @@ async function authenticateTelegram(env: Env, initData: string) {
     hasUser: Boolean(userJson),
     authDate,
   });
-  if (!hash || !authDate || !userJson) return { ok: false, message: 'اطلاعات ورود تلگرام ناقص است.' } as const;
+  if (!hash || !authDate || !userJson) {
+    await logCrmEvent(env, {
+      eventType: 'telegram_auth_failed',
+      title: 'ورود تلگرام ناموفق',
+      details: { reason: 'missing_required_fields', hasHash: Boolean(hash), hasAuthDate: Boolean(authDate), hasUser: Boolean(userJson) },
+    });
+    return { ok: false, message: 'اطلاعات ورود تلگرام ناقص است.' } as const;
+  }
 
   const ageSeconds = Math.floor(Date.now() / 1000) - authDate;
-  if (ageSeconds < 0 || ageSeconds > 86400) return { ok: false, message: 'اطلاعات ورود تلگرام منقضی شده است.' } as const;
+  if (ageSeconds < 0 || ageSeconds > 86400) {
+    await logCrmEvent(env, {
+      eventType: 'telegram_auth_failed',
+      title: 'ورود تلگرام ناموفق',
+      details: { reason: 'expired', ageSeconds },
+    });
+    return { ok: false, message: 'اطلاعات ورود تلگرام منقضی شده است.' } as const;
+  }
 
   const dataCheckString = [...params.entries()]
     .filter(([key]) => key !== 'hash')
@@ -140,7 +197,14 @@ async function authenticateTelegram(env: Env, initData: string) {
     authDate,
     computedMatches: computed === hash,
   });
-  if (computed !== hash) return { ok: false, message: 'امضای ورود تلگرام معتبر نیست.' } as const;
+  if (computed !== hash) {
+    await logCrmEvent(env, {
+      eventType: 'telegram_auth_failed',
+      title: 'ورود تلگرام ناموفق',
+      details: { reason: 'invalid_signature' },
+    });
+    return { ok: false, message: 'امضای ورود تلگرام معتبر نیست.' } as const;
+  }
 
   const user = JSON.parse(userJson) as { id: number; username?: string; first_name?: string; last_name?: string };
   const telegramUserId = String(user.id);
@@ -149,6 +213,14 @@ async function authenticateTelegram(env: Env, initData: string) {
     username: user.username ?? null,
     firstName: user.first_name ?? null,
     lastName: user.last_name ?? null,
+  });
+  await logCrmEvent(env, {
+    eventType: 'telegram_auth_success',
+    telegramUserId,
+    title: 'ورود تلگرام موفق',
+    details: {
+      username: user.username ?? null,
+    },
   });
   const stored = await getUser(env, telegramUserId);
   return { ok: true, user: stored } as const;

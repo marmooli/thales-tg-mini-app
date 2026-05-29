@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { CrmApp } from './crm-app';
 import { copy } from './copy';
 import { toPersianDigits } from './shared';
 
@@ -6,6 +7,52 @@ const thalesRoundLogoUrl = '/assets/thales-logo-round-yellow.svg';
 const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
 type Status = 'not_verified' | 'pending_review' | 'verified' | 'rejected';
+
+export function App() {
+  if (window.location.pathname.startsWith('/crm')) {
+    return (
+      <CrmErrorBoundary>
+        <CrmApp />
+      </CrmErrorBoundary>
+    );
+  }
+  return <MiniApp />;
+}
+
+class CrmErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; message: string }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, message: '' };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return {
+      hasError: true,
+      message: error?.message || 'خطای نامشخص در CRM رخ داده است.',
+    };
+  }
+
+  override render() {
+    if (this.state.hasError) {
+      return (
+        <main className="crm-app">
+          <div className="crm-shell">
+            <section className="card crm-viewport">
+              <p className="crm-eyebrow">خطا در CRM</p>
+              <h2>رابط کاربری CRM بارگذاری نشد</h2>
+              <p className="crm-feedback crm-feedback-error">{this.state.message}</p>
+              <p className="crm-muted">
+                صفحه را یک بار hard refresh کن. اگر مشکل ادامه داشت، متن خطا را برای من بفرست تا مستقیم رفعش کنم.
+              </p>
+            </section>
+          </div>
+        </main>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 type MeResponse =
   | {
@@ -30,7 +77,7 @@ function getTelegramInitData() {
   return tg?.initData ?? '';
 }
 
-export function App() {
+function MiniApp() {
   const [status, setStatus] = useState<Status>('not_verified');
   const [uid, setUid] = useState('');
   const [message, setMessage] = useState(copy.welcome);
