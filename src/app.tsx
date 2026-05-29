@@ -156,7 +156,7 @@ export function App() {
           data.status === 'verified'
             ? 'شناسه شما تأیید شد.'
             : data.status === 'pending_review'
-              ? 'شناسه شما ثبت شد و در حال بررسی است.'
+              ? 'یا شناسه اشتباه وارد شده یا این شناسه با کد طالس ثبت‌نام نکرده است.'
               : 'امکان تأیید این شناسه وجود نداشت.',
         );
         setFeatures({ xtCard48Discount: data.status === 'verified' });

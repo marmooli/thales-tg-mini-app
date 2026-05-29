@@ -54,14 +54,14 @@ app.post('/api/verify/xt-uid', async (c) => {
   const result = await verifyXtReferral(c.env, normalized, auth.user.telegramUserId, fallbackAllowlistCheck(c.env));
   await persistVerificationAttempt(c.env, auth.user.telegramUserId, normalized, result);
   await applyVerificationResult(c.env, auth.user.telegramUserId, normalized, result.status);
-  return c.json({
-    ok: true,
-    status: result.status,
-    message:
-      result.status === 'verified'
-        ? 'شناسه شما با موفقیت تأیید شد.'
-        : 'شناسه شما ثبت شد و در حال بررسی است.',
-  });
+    return c.json({
+      ok: true,
+      status: result.status,
+      message:
+        result.status === 'verified'
+          ? 'شناسه شما با موفقیت تأیید شد.'
+        : 'یا شناسه اشتباه وارد شده یا این شناسه با کد طالس ثبت‌نام نکرده است.',
+    });
 });
 
 app.post('/api/feature/xt-card-48', async (c) => {
