@@ -156,6 +156,7 @@ function MiniApp() {
   const [initData, setInitData] = useState('');
   const [verificationFlow, setVerificationFlow] = useState({ failedAttemptsInSession: 0, showSupport: false });
   const lastLoggedRouteRef = useRef<XtUidFlowRoute | null>(null);
+  const homeScrollYRef = useRef(0);
 
   useEffect(() => {
     const syncRoute = () => {
@@ -269,6 +270,20 @@ function MiniApp() {
       }
     })();
   }, [features.xtCard48Discount, initData]);
+
+  useEffect(() => {
+    if (route === 'verify') {
+      homeScrollYRef.current = window.scrollY;
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    if (route === 'main' && homeScrollYRef.current > 0) {
+      window.requestAnimationFrame(() => {
+        window.scrollTo(0, homeScrollYRef.current);
+      });
+    }
+  }, [route]);
 
   useEffect(() => {
     if (route === 'xt-card-discount-process' && storedDiscountEmail && !discountEmailInput) {
@@ -405,9 +420,31 @@ function MiniApp() {
     if (discountEmailFeedback) setDiscountEmailFeedback(null);
   }
 
+  const supportVisible = verificationFlow.showSupport && status !== 'verified';
+
   if (loading) return <Shell title={copy.title} verified={false}>{copy.loading}</Shell>;
 
   if (route !== 'main') {
+    if (route === 'verify') {
+      return (
+        <Shell title={getXtUidFlowPageTitle(route)} verified={status === 'verified'}>
+          {statusMessage ? <p className="lead page-message">{statusMessage}</p> : null}
+          <RouteVerificationPage
+            uid={uid}
+            submitting={submitting}
+            submitFeedback={submitFeedback}
+            showSupport={supportVisible}
+            onUidChange={setUid}
+            onSubmit={() => void submitUid()}
+            onOpenUidHelp={() => navigateTo(setRoute, '/xt-uid-help')}
+            onOpenRegistrationGuide={() => navigateTo(setRoute, '/xt-registration-guide')}
+            onOpenSupport={() => navigateTo(setRoute, '/support')}
+            onBack={() => navigateTo(setRoute, '/')}
+          />
+        </Shell>
+      );
+    }
+
     if (route === 'xt-campaign') {
       return (
         <Shell title={copy.title} verified={status === 'verified'}>
@@ -428,7 +465,7 @@ function MiniApp() {
             title={getXtUidFlowPageTitle(route)}
             imageSrc={xtUidGuideImageUrl}
             imageAlt="راهنمای پیدا کردن UID"
-            onBack={() => navigateTo(setRoute, '/')}
+            onBack={() => navigateTo(setRoute, '/verify')}
           />
         </Shell>
       );
@@ -440,7 +477,7 @@ function MiniApp() {
           {statusMessage ? <p className="lead page-message">{statusMessage}</p> : null}
           <RouteRegistrationGuidePage
             title={getXtUidFlowPageTitle(route)}
-            onBack={() => navigateTo(setRoute, '/')}
+            onBack={() => navigateTo(setRoute, '/verify')}
           />
         </Shell>
       );
@@ -490,7 +527,11 @@ function MiniApp() {
       return (
         <Shell title={copy.title} verified={status === 'verified'}>
           {statusMessage ? <p className="lead page-message">{statusMessage}</p> : null}
-          <RouteSupportPage title={getXtUidFlowPageTitle(route)} supportUrl={supportTelegramUrl} onBack={() => navigateTo(setRoute, '/')} />
+          <RouteSupportPage
+            title={getXtUidFlowPageTitle(route)}
+            supportUrl={supportTelegramUrl}
+            onBack={() => navigateTo(setRoute, '/verify')}
+          />
         </Shell>
       );
     }
@@ -498,69 +539,16 @@ function MiniApp() {
     return (
       <Shell title={copy.title} verified={status === 'verified'}>
         {statusMessage ? <p className="lead page-message">{statusMessage}</p> : null}
-        <RoutePlaceholderPage title={getXtUidFlowPageTitle(route)} onBack={() => navigateTo(setRoute, '/')} />
+        <RoutePlaceholderPage title={getXtUidFlowPageTitle(route)} onBack={() => navigateTo(setRoute, '/verify')} />
       </Shell>
     );
   }
-
-  const supportVisible = verificationFlow.showSupport && status !== 'verified';
 
   return (
     <Shell title={copy.title} verified={status === 'verified'}>
       {statusMessage ? <p className="lead page-message">{statusMessage}</p> : null}
 
-      {status !== 'verified' ? (
-        <section className="card panel-accent stack">
-          <div className="section-title">
-            <h2>{copy.verifyHeading}</h2>
-          </div>
-          <p>{copy.verifyDescription}</p>
-          <p>{copy.verifyInstruction}</p>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void submitUid();
-            }}
-          >
-            <label>
-              {copy.uidLabel}
-              <input
-                value={uid}
-                onChange={(e) => setUid(e.target.value)}
-                placeholder={copy.uidPlaceholder}
-                inputMode="text"
-                autoComplete="off"
-                spellCheck={false}
-              />
-            </label>
-            <button className="primary" type="submit" disabled={submitting}>
-              {submitting ? copy.loading : copy.submit}
-            </button>
-          </form>
-          {submitFeedback ? (
-            <p className="feedback feedback-error" aria-live="polite" aria-atomic="true">
-              {submitFeedback}
-            </p>
-          ) : null}
-          <div className="xt-helper-actions">
-            <button className="xt-helper-button secondary" type="button" onClick={() => navigateTo(setRoute, '/xt-uid-help')}>
-              {copy.helperUid}
-            </button>
-            <button
-              className="xt-helper-button secondary"
-              type="button"
-              onClick={() => navigateTo(setRoute, '/xt-registration-guide')}
-            >
-              {copy.helperRegistration}
-            </button>
-          </div>
-          {supportVisible ? (
-            <button className="xt-helper-button primary" type="button" onClick={() => navigateTo(setRoute, '/support')}>
-              {copy.support}
-            </button>
-          ) : null}
-        </section>
-      ) : null}
+      <VerificationEntryCard onOpenVerification={() => navigateTo(setRoute, '/verify')} />
 
       <section className="card stack panel-accent campaign-entry-card">
         <div className="section-title">
@@ -678,6 +666,99 @@ function Shell({ title, verified, children }: { title: string; verified: boolean
         {children}
       </div>
     </main>
+  );
+}
+
+export function VerificationEntryCard({ onOpenVerification }: { onOpenVerification: () => void }) {
+  return (
+    <section className="card stack panel-accent verification-entry-card">
+      <div className="section-title">
+        <h2>تأیید شناسه</h2>
+      </div>
+      <p className="route-guide-copy">
+        دسترسی به خدمات اختصاصی طالس فقط برای کاربرانی فراهم است که با کد طالس در صرافی XT حساب داشته باشند. لطفاً برای آزاد شدن خدمات
+        اختصاصی فرایند تأیید شناسه را تکمیل کنید.
+      </p>
+      <button className="primary verification-entry-button" type="button" onClick={onOpenVerification}>
+        تکمیل تأیید شناسه
+      </button>
+    </section>
+  );
+}
+
+export function RouteVerificationPage({
+  uid,
+  submitting,
+  submitFeedback,
+  showSupport,
+  onUidChange,
+  onSubmit,
+  onOpenUidHelp,
+  onOpenRegistrationGuide,
+  onOpenSupport,
+  onBack,
+}: {
+  uid: string;
+  submitting: boolean;
+  submitFeedback: string | null;
+  showSupport: boolean;
+  onUidChange: (value: string) => void;
+  onSubmit: () => void;
+  onOpenUidHelp: () => void;
+  onOpenRegistrationGuide: () => void;
+  onOpenSupport: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <section className="card panel-accent stack route-card route-card-verification">
+      <div className="section-title">
+        <h2>تأیید شناسه</h2>
+      </div>
+      <p>{copy.verifyDescription}</p>
+      <p>{copy.verifyInstruction}</p>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit();
+        }}
+      >
+        <label>
+          {copy.uidLabel}
+          <input
+            value={uid}
+            onChange={(e) => onUidChange(e.target.value)}
+            placeholder={copy.uidPlaceholder}
+            inputMode="text"
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </label>
+        <button className="primary" type="submit" disabled={submitting}>
+          {submitting ? copy.loading : copy.submit}
+        </button>
+      </form>
+      {submitFeedback ? (
+        <p className="feedback feedback-error" aria-live="polite" aria-atomic="true">
+          {submitFeedback}
+        </p>
+      ) : null}
+      <div className="xt-helper-actions">
+        <button className="xt-helper-button secondary" type="button" onClick={onOpenUidHelp}>
+          {copy.helperUid}
+        </button>
+        <button className="xt-helper-button secondary" type="button" onClick={onOpenRegistrationGuide}>
+          {copy.helperRegistration}
+        </button>
+      </div>
+      {showSupport ? (
+        <button className="xt-helper-button primary" type="button" onClick={onOpenSupport}>
+          {copy.support}
+        </button>
+      ) : null}
+      <button className="secondary xt-helper-button route-guide-back route-guide-button" type="button" onClick={onBack}>
+        {getXtUidFlowBackLabel()}
+      </button>
+    </section>
   );
 }
 
@@ -802,7 +883,7 @@ export function RouteRegistrationGuidePage({ title, onBack }: { title: string; o
             target="_blank"
             rel="noreferrer"
           >
-            لینک اینترنت داخلی برای داخل ایران
+            ثبت‌نام اینترنت داخلی برای داخل ایران
           </a>
           <a
             className="secondary xt-helper-button route-guide-link route-guide-button"
@@ -810,7 +891,7 @@ export function RouteRegistrationGuidePage({ title, onBack }: { title: string; o
             target="_blank"
             rel="noreferrer"
           >
-            لینک کاربران داخل ایران (اینترنت بین‌المللی)
+            ثبت‌نام کاربران داخل ایران (اینترنت بین‌المللی)
           </a>
           <a
             className="secondary xt-helper-button route-guide-link route-guide-button"
@@ -818,7 +899,7 @@ export function RouteRegistrationGuidePage({ title, onBack }: { title: string; o
             target="_blank"
             rel="noreferrer"
           >
-            لینک کاربران خارج از ایران
+            ثبت‌نام کاربران خارج از ایران
           </a>
         </div>
         <p className="route-guide-copy route-guide-footnote">

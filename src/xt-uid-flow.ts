@@ -1,5 +1,6 @@
 export type XtUidFlowRoute =
   | 'main'
+  | 'verify'
   | 'xt-campaign'
   | 'xt-uid-help'
   | 'xt-registration-guide'
@@ -36,6 +37,8 @@ export function getOrCreateVerificationSessionId(storage?: Pick<Storage, 'getIte
 
 export function resolveXtUidFlowRoute(pathname: string): XtUidFlowRoute {
   switch (pathname) {
+    case '/verify':
+      return 'verify';
     case '/xt-campaign':
       return 'xt-campaign';
     case '/xt-uid-help':
@@ -55,6 +58,8 @@ export function resolveXtUidFlowRoute(pathname: string): XtUidFlowRoute {
 
 export function getXtUidFlowRoutePath(route: XtUidFlowRoute) {
   switch (route) {
+    case 'verify':
+      return '/verify';
     case 'xt-campaign':
       return '/xt-campaign';
     case 'xt-uid-help':
@@ -74,6 +79,8 @@ export function getXtUidFlowRoutePath(route: XtUidFlowRoute) {
 
 export function getXtUidFlowPageTitle(route: Exclude<XtUidFlowRoute, 'main'>) {
   switch (route) {
+    case 'verify':
+      return 'تأیید شناسه';
     case 'xt-campaign':
       return 'صفحه فرود XT Card';
     case 'xt-uid-help':
@@ -95,6 +102,11 @@ export function getXtUidFlowBackLabel() {
 
 export function getXtUidFlowNavigationEvent(route: Exclude<XtUidFlowRoute, 'main'>) {
   switch (route) {
+    case 'verify':
+      return {
+        eventType: 'xt_verification_page_opened',
+        title: 'مشاهده صفحه تأیید شناسه',
+      } as const;
     case 'xt-campaign':
       return {
         eventType: 'xt_campaign_opened',

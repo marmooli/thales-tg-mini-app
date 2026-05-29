@@ -32,11 +32,13 @@ describe('xt uid flow helpers', () => {
 
   it('resolves helper routes and page titles', () => {
     expect(resolveXtUidFlowRoute('/xt-campaign')).toBe('xt-campaign');
+    expect(resolveXtUidFlowRoute('/verify')).toBe('verify');
     expect(resolveXtUidFlowRoute('/xt-uid-help')).toBe('xt-uid-help');
     expect(resolveXtUidFlowRoute('/xt-registration-guide')).toBe('xt-registration-guide');
     expect(resolveXtUidFlowRoute('/support')).toBe('support');
     expect(resolveXtUidFlowRoute('/xt-card-discount-process')).toBe('xt-card-discount-process');
     expect(resolveXtUidFlowRoute('/xt-card-coupon-video')).toBe('xt-card-coupon-video');
+    expect(getXtUidFlowPageTitle('verify')).toBe('تأیید شناسه');
     expect(getXtUidFlowPageTitle('xt-campaign')).toBe('صفحه فرود XT Card');
     expect(getXtUidFlowPageTitle('xt-uid-help')).toBe('راهنمای پیدا کردن UID');
     expect(getXtUidFlowPageTitle('xt-registration-guide')).toBe('راهنمای ثبت‌نام با کد طالس');
@@ -68,7 +70,13 @@ describe('xt uid flow helpers', () => {
       location: { hostname: 'localhost', pathname: '/' },
     } as Window);
 
-    const { RoutePlaceholderPage, RouteGuidePage, RouteRegistrationGuidePage } = await import('../src/app');
+    const { RoutePlaceholderPage, RouteGuidePage, RouteRegistrationGuidePage, RouteVerificationPage, VerificationEntryCard } =
+      await import('../src/app');
+    const entryHtml = renderToStaticMarkup(<VerificationEntryCard onOpenVerification={() => undefined} />);
+
+    expect(entryHtml).toContain('تأیید شناسه');
+    expect(entryHtml).toContain('button');
+
     const html = renderToStaticMarkup(
       <RoutePlaceholderPage title="راهنمای پیدا کردن UID" onBack={() => undefined} />,
     );
@@ -94,11 +102,30 @@ describe('xt uid flow helpers', () => {
     );
 
     expect(registrationHtml).toContain('به علت مسائل فیلترینگ یا قطع اینترنت در ایران');
-    expect(registrationHtml).toContain('لینک اینترنت داخلی برای داخل ایران');
-    expect(registrationHtml).toContain('لینک کاربران داخل ایران (اینترنت بین‌المللی)');
-    expect(registrationHtml).toContain('لینک کاربران خارج از ایران');
+    expect(registrationHtml).toContain('ثبت‌نام اینترنت داخلی برای داخل ایران');
+    expect(registrationHtml).toContain('ثبت‌نام کاربران داخل ایران (اینترنت بین‌المللی)');
+    expect(registrationHtml).toContain('ثبت‌نام کاربران خارج از ایران');
     expect(registrationHtml).toContain('پس از بازکردن حساب با کد طالس مجدداً به مینی‌اپ بازگردید');
     expect(registrationHtml).toContain('https://www.xtcorenet.com/fa/accounts/register?ref=THALES3');
+
+    const verifyHtml = renderToStaticMarkup(
+      <RouteVerificationPage
+        uid=""
+        submitting={false}
+        submitFeedback={null}
+        showSupport={false}
+        onUidChange={() => undefined}
+        onSubmit={() => undefined}
+        onOpenUidHelp={() => undefined}
+        onOpenRegistrationGuide={() => undefined}
+        onOpenSupport={() => undefined}
+        onBack={() => undefined}
+      />,
+    );
+
+    expect(verifyHtml).toContain('تأیید شناسه');
+    expect(verifyHtml).toContain('شناسۀ XT-UID را وارد کنید');
+    expect(verifyHtml).toContain('بازگشت');
 
     const videoHtml = renderToStaticMarkup(
       <RoutePlaceholderPage title="ویدیوی راهنمای فعال کردن رایگان کارت" onBack={() => undefined} />,
