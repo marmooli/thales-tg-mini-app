@@ -112,7 +112,15 @@ app.post('/api/telegram/webhook', async (c) => {
   return c.json({ ok: true });
 });
 
-app.get('*', async (c) => c.env.ASSETS.fetch(c.req.raw));
+app.get('*', async (c) => {
+  const assetResponse = await c.env.ASSETS.fetch(c.req.raw);
+  if (assetResponse.status !== 404 || c.req.path.startsWith('/assets/') || c.req.path.startsWith('/api/')) {
+    return assetResponse;
+  }
+
+  const fallbackRequest = new Request(new URL('/index.html', c.req.url), c.req.raw);
+  return c.env.ASSETS.fetch(fallbackRequest);
+});
 
 async function authenticateTelegram(env: Env, initData: string) {
   console.log('telegram auth start', {
