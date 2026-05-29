@@ -112,6 +112,9 @@ app.post('/api/telegram/webhook', async (c) => {
   return c.json({ ok: true });
 });
 
+app.get('/crm', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
+app.get('/crm/*', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
+
 app.get('*', async (c) => {
   const assetResponse = await c.env.ASSETS.fetch(c.req.raw);
   if (assetResponse.status !== 404 || c.req.path.startsWith('/assets/') || c.req.path.startsWith('/api/')) {
