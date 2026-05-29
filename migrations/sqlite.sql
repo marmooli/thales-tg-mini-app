@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS uid_verification_attempts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   telegram_user_id TEXT NOT NULL,
+  verification_session_id TEXT,
   xt_uid TEXT NOT NULL,
   status TEXT NOT NULL,
   source TEXT NOT NULL,
@@ -70,3 +71,4 @@ CREATE INDEX IF NOT EXISTS idx_crm_sessions_expires_at ON crm_sessions(expires_a
 CREATE INDEX IF NOT EXISTS idx_crm_activity_events_telegram_user_id ON crm_activity_events(telegram_user_id);
 CREATE INDEX IF NOT EXISTS idx_crm_activity_events_event_type ON crm_activity_events(event_type);
 CREATE INDEX IF NOT EXISTS idx_crm_activity_events_created_at ON crm_activity_events(created_at);
+CREATE INDEX IF NOT EXISTS idx_uid_verification_attempts_session ON uid_verification_attempts(telegram_user_id, verification_session_id, created_at);

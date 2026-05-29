@@ -33,15 +33,15 @@ export function getDiscountAccessCopy(isVerified: boolean) {
   if (isVerified) {
     return {
       allowed: true,
-      title: 'دریافت تخفیف ۴۸ دلاری کارت XT',
+      title: 'دریافت تخفیف ۳۸ دلاری کارت XT',
       body: 'این مزیت فقط برای مشتریان تأییدشده ثالس فعال است. جزئیات کامل بعداً اضافه می‌شود.',
-      cta: 'دریافت تخفیف ۴۸ دلاری کارت XT',
+      cta: 'دریافت تخفیف ۳۸ دلاری کارت XT',
     } as const;
   }
 
   return {
     allowed: false,
-    title: 'دریافت تخفیف ۴۸ دلاری کارت XT',
+    title: 'دریافت تخفیف ۳۸ دلاری کارت XT',
     body: 'این بخش فقط پس از تأیید شناسه در دسترس است.',
     cta: 'تأیید شناسه XT',
   } as const;

@@ -8,6 +8,12 @@ import {
   type VerificationStatus,
 } from '../src/shared';
 import { logCrmEvent, registerCrmRoutes } from '../src/crm-server';
+import {
+  getFailedXtUidAttemptCount,
+  recordXtUidFlowNavigationEvent,
+  recordXtUidVerificationAttempt,
+} from '../src/xt-uid-flow-server';
+import { type XtUidFlowRoute } from '../src/xt-uid-flow';
 import { verifyXtReferral } from '../src/xt-verification';
 
 type Env = {
@@ -35,9 +41,12 @@ app.post('/api/auth/telegram', async (c) => {
 });
 
 app.post('/api/me', async (c) => {
-  const { initData } = await c.req.json<{ initData?: string }>().catch(() => ({ initData: '' }));
+  const { initData, verificationSessionId } = await c.req
+    .json<{ initData?: string; verificationSessionId?: string }>()
+    .catch(() => ({ initData: '', verificationSessionId: '' }));
   const user = await authenticateTelegram(c.env, initData ?? '');
   if (!user.ok) return c.json(user, 401);
+  const failedAttemptsInSession = await getFailedXtUidAttemptCount(c.env, user.user.telegramUserId, verificationSessionId ?? '');
   return c.json({
     ok: true,
     user: {
@@ -46,11 +55,17 @@ app.post('/api/me', async (c) => {
       accessLevel: user.user.accessLevel,
       features: { xtCard48Discount: user.user.verificationStatus === 'verified' },
     },
+    verificationFlow: {
+      failedAttemptsInSession,
+      showSupport: failedAttemptsInSession >= 3,
+    },
   });
 });
 
 app.post('/api/verify/xt-uid', async (c) => {
-  const { initData, xtUid } = await c.req.json<{ initData?: string; xtUid?: string }>().catch(() => ({ initData: '', xtUid: '' }));
+  const { initData, xtUid, verificationSessionId } = await c.req
+    .json<{ initData?: string; xtUid?: string; verificationSessionId?: string }>()
+    .catch(() => ({ initData: '', xtUid: '', verificationSessionId: '' }));
   const auth = await authenticateTelegram(c.env, initData ?? '');
   if (!auth.ok) return c.json(auth, 401);
   const normalized = normalizeUid(xtUid ?? '');
@@ -63,15 +78,23 @@ app.post('/api/verify/xt-uid', async (c) => {
     });
     return c.json({ ok: false, message: 'شناسه XT معتبر نیست.' }, 400);
   }
+
   await logCrmEvent(c.env, {
     eventType: 'uid_submit',
     telegramUserId: auth.user.telegramUserId,
     xtUid: normalized,
     title: 'ثبت شناسه XT',
-    details: { xtUid: normalized },
+    details: { xtUid: normalized, verificationSessionId: verificationSessionId ?? '' },
   });
+
   const result = await verifyXtReferral(c.env, normalized, auth.user.telegramUserId, fallbackAllowlistCheck(c.env));
-  await persistVerificationAttempt(c.env, auth.user.telegramUserId, normalized, result);
+  const flowState = await recordXtUidVerificationAttempt(c.env, {
+    telegramUserId: auth.user.telegramUserId,
+    xtUid: normalized,
+    verificationSessionId: verificationSessionId ?? '',
+    result,
+  });
+
   await applyVerificationResult(c.env, auth.user.telegramUserId, normalized, result.status);
   await logCrmEvent(c.env, {
     eventType: result.status === 'verified' ? 'uid_verified' : 'uid_pending_review',
@@ -82,16 +105,40 @@ app.post('/api/verify/xt-uid', async (c) => {
       source: result.source,
       rawResult: result.rawResult,
       fallbackUsed: result.fallbackUsed,
+      verificationSessionId: verificationSessionId ?? '',
+      failedAttemptsInSession: flowState.failedAttemptsInSession,
     },
   });
-    return c.json({
-      ok: true,
-      status: result.status,
-      message:
-        result.status === 'verified'
-          ? 'شناسه شما با موفقیت تأیید شد.'
+
+  return c.json({
+    ok: true,
+    status: result.status,
+    message:
+      result.status === 'verified'
+        ? 'شناسه شما با موفقیت تأیید شد.'
         : 'یا شناسه اشتباه وارد شده یا این شناسه با کد طالس ثبت‌نام نکرده است.',
+    verificationFlow: flowState,
+  });
+});
+
+app.post('/api/xt-uid/navigation', async (c) => {
+  const { initData, route, verificationSessionId } = await c.req
+    .json<{ initData?: string; route?: XtUidFlowRoute; verificationSessionId?: string }>()
+    .catch(() => ({ initData: '', route: 'main', verificationSessionId: '' }));
+  const auth = await authenticateTelegram(c.env, initData ?? '');
+  if (!auth.ok) return c.json(auth, 401);
+
+  const normalizedRoute: XtUidFlowRoute =
+    route === 'xt-uid-help' || route === 'xt-registration-guide' || route === 'support' ? route : 'main';
+  if (normalizedRoute !== 'main') {
+    await recordXtUidFlowNavigationEvent(c.env, {
+      telegramUserId: auth.user.telegramUserId,
+      verificationSessionId: verificationSessionId ?? '',
+      route: normalizedRoute,
     });
+  }
+
+  return c.json({ ok: true });
 });
 
 app.post('/api/feature/xt-card-48', async (c) => {
@@ -114,6 +161,9 @@ app.post('/api/telegram/webhook', async (c) => {
 
 app.get('/crm', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
 app.get('/crm/*', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
+app.get('/xt-uid-help', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
+app.get('/xt-registration-guide', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
+app.get('/support', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
 
 app.get('*', async (c) => {
   const assetResponse = await c.env.ASSETS.fetch(c.req.raw);
@@ -260,21 +310,6 @@ function fallbackAllowlistCheck(env: Env) {
     const row = await env.DB.prepare(`SELECT xt_uid FROM allowed_xt_uids WHERE xt_uid = ?`).bind(uid).first();
     return Boolean(row);
   };
-}
-
-async function persistVerificationAttempt(
-  env: Env,
-  telegramUserId: string,
-  xtUid: string,
-  result: Awaited<ReturnType<typeof verifyXtReferral>>,
-) {
-  const now = new Date().toISOString();
-  await env.DB.prepare(
-    `INSERT INTO uid_verification_attempts (telegram_user_id, xt_uid, status, source, raw_result, created_at)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-  )
-    .bind(telegramUserId, xtUid, result.status, result.source, JSON.stringify(result.rawResult), now)
-    .run();
 }
 
 async function applyVerificationResult(
