@@ -143,3 +143,7 @@ export function getXtUidFlowNavigationEvent(route: Exclude<XtUidFlowRoute, 'main
 export function shouldRevealXtUidSupport(failedAttemptsInSession: number) {
   return failedAttemptsInSession >= 3;
 }
+
+export function shouldReturnHomeAfterVerification(status: 'not_verified' | 'pending_review' | 'verified' | 'rejected') {
+  return status === 'verified';
+}

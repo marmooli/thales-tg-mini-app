@@ -15,6 +15,7 @@ export type XtVerificationAttempt = {
 
 export type XtVerificationEnv = {
   XT_API_PROXY_BASE_URL?: string;
+  DEV_DISABLE_XT_API_PROXY?: string;
   DB: D1Database;
 };
 
@@ -30,6 +31,10 @@ export async function verifyXtReferral(
       source: 'xt_api_proxy',
       rawResult: { reason: 'invalid_format' },
     };
+  }
+
+  if (env.DEV_DISABLE_XT_API_PROXY === 'true') {
+    return verifyViaFallback(xtUid, fallbackCheck);
   }
 
   const baseUrl = env.XT_API_PROXY_BASE_URL?.trim();
@@ -79,4 +84,3 @@ async function verifyViaFallback(xtUid: string, fallbackCheck: (uid: string) => 
     fallbackUsed: true,
   };
 }
-

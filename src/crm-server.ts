@@ -609,8 +609,7 @@ async function getCrmUserDetail(env: CrmEnv, telegramUserId: string) {
     `SELECT id, event_type, telegram_user_id, crm_user_id, xt_uid, actor_role, title, details_json, created_at AS createdAt
      FROM crm_activity_events
      WHERE telegram_user_id = ?
-     ORDER BY created_at DESC, id DESC
-     LIMIT 100`,
+     ORDER BY created_at DESC, id DESC`,
   )
     .bind(telegramUserId)
     .all<CrmTimelineEvent>();

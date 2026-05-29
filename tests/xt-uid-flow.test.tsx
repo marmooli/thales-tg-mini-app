@@ -8,6 +8,7 @@ import {
   getXtUidFlowPageTitle,
   resolveXtUidFlowRoute,
   shouldRevealXtUidSupport,
+  shouldReturnHomeAfterVerification,
 } from '../src/xt-uid-flow';
 
 afterEach(() => {
@@ -54,6 +55,13 @@ describe('xt uid flow helpers', () => {
     expect(shouldRevealXtUidSupport(3)).toBe(true);
   });
 
+  it('returns home after successful verification', () => {
+    expect(shouldReturnHomeAfterVerification('verified')).toBe(true);
+    expect(shouldReturnHomeAfterVerification('not_verified')).toBe(false);
+    expect(shouldReturnHomeAfterVerification('pending_review')).toBe(false);
+    expect(shouldReturnHomeAfterVerification('rejected')).toBe(false);
+  });
+
   it('renders the xt campaign landing page with a home entry and discount action', () => {
     const html = renderToStaticMarkup(
       <XtCampaignLandingPage onOpenDiscountProcess={() => undefined} onBack={() => undefined} />,
@@ -74,12 +82,26 @@ describe('xt uid flow helpers', () => {
       location: { hostname: 'localhost', pathname: '/' },
     } as Window);
 
-    const { RoutePlaceholderPage, RouteGuidePage, RouteRegistrationGuidePage, RouteVerificationPage, VerificationEntryCard } =
-      await import('../src/app');
+    const {
+      HomeVerificationEntryCard,
+      RoutePlaceholderPage,
+      RouteGuidePage,
+      RouteRegistrationGuidePage,
+      RouteVerificationPage,
+      VerificationEntryCard,
+    } = await import('../src/app');
     const entryHtml = renderToStaticMarkup(<VerificationEntryCard onOpenVerification={() => undefined} />);
 
     expect(entryHtml).toContain('تأیید شناسه');
     expect(entryHtml).toContain('button');
+
+    const hiddenHtml = renderToStaticMarkup(<HomeVerificationEntryCard status="verified" onOpenVerification={() => undefined} />);
+    const visibleHtml = renderToStaticMarkup(
+      <HomeVerificationEntryCard status="not_verified" onOpenVerification={() => undefined} />,
+    );
+
+    expect(hiddenHtml).toBe('');
+    expect(visibleHtml).toContain('\u062a\u0623\u06cc\u06cc\u062f \u0634\u0646\u0627\u0633\u0647');
 
     const html = renderToStaticMarkup(
       <RoutePlaceholderPage title="راهنمای پیدا کردن UID" onBack={() => undefined} />,

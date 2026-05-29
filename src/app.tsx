@@ -14,6 +14,7 @@ import {
   getXtUidFlowBackLabel,
   getXtUidFlowPageTitle,
   resolveXtUidFlowRoute,
+  shouldReturnHomeAfterVerification,
   type XtUidFlowRoute,
 } from './xt-uid-flow';
 import { normalizeUid } from './shared';
@@ -352,6 +353,9 @@ function MiniApp() {
         setSubmitFeedback(data.message);
         setStatusMessage(null);
         setFeatures({ xtCard48Discount: data.status === 'verified' });
+        if (shouldReturnHomeAfterVerification(data.status)) {
+          navigateTo(setRoute, '/');
+        }
       } else {
         setSubmitFeedback(data.message ?? copy.verificationPending);
       }
@@ -549,7 +553,7 @@ function MiniApp() {
     <Shell title={copy.title} verified={status === 'verified'}>
       {statusMessage ? <p className="lead page-message">{statusMessage}</p> : null}
 
-      <VerificationEntryCard onOpenVerification={() => navigateTo(setRoute, '/verify')} />
+      <HomeVerificationEntryCard status={status} onOpenVerification={() => navigateTo(setRoute, '/verify')} />
 
       <section className="card stack panel-accent campaign-entry-card">
         <div className="section-title">
@@ -687,6 +691,17 @@ export function VerificationEntryCard({ onOpenVerification }: { onOpenVerificati
       </button>
     </section>
   );
+}
+
+export function HomeVerificationEntryCard({
+  status,
+  onOpenVerification,
+}: {
+  status: Status;
+  onOpenVerification: () => void;
+}) {
+  if (status === 'verified') return null;
+  return <VerificationEntryCard onOpenVerification={onOpenVerification} />;
 }
 
 export function RouteVerificationPage({
