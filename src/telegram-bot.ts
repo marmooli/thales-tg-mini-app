@@ -6,7 +6,12 @@ export function buildCouponSentNotificationMessage() {
   return 'تبریک! کوپن ۳۸ دلاری تخفیف کارت برای شما آزاد شد. اکنون می‌توانید کارت XT خود را بصورت رایگان فعال کنید.';
 }
 
-export async function sendTelegramMessage(env: TelegramBotEnv, chatId: number | string, text: string, replyMarkup?: unknown) {
+export async function sendTelegramMessage(
+  env: TelegramBotEnv,
+  chatId: number | string,
+  text: string,
+  replyMarkup?: unknown,
+) {
   const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
