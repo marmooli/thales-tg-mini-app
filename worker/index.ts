@@ -8,6 +8,7 @@ import {
   type VerificationStatus,
 } from '../src/shared';
 import { logCrmEvent, registerCrmRoutes } from '../src/crm-server';
+import { saveDiscountEmail } from '../src/xt-card-discount-server';
 import {
   getFailedXtUidAttemptCount,
   recordXtUidFlowNavigationEvent,
@@ -53,6 +54,7 @@ app.post('/api/me', async (c) => {
       telegramUserId: user.user.telegramUserId,
       verificationStatus: user.user.verificationStatus,
       accessLevel: user.user.accessLevel,
+      discountEmail: user.user.discountEmail,
       features: { xtCard48Discount: user.user.verificationStatus === 'verified' },
     },
     verificationFlow: {
@@ -121,6 +123,42 @@ app.post('/api/verify/xt-uid', async (c) => {
   });
 });
 
+app.post('/api/xt-card-discount-process/email', async (c) => {
+  const { initData, email, confirmEmail, verificationSessionId } = await c.req
+    .json<{ initData?: string; email?: string; confirmEmail?: string; verificationSessionId?: string }>()
+    .catch(() => ({ initData: '', email: '', confirmEmail: '', verificationSessionId: '' }));
+  const auth = await authenticateTelegram(c.env, initData ?? '');
+  if (!auth.ok) return c.json(auth, 401);
+
+  const result = await saveDiscountEmail(c.env, {
+    telegramUserId: auth.user.telegramUserId,
+    verificationStatus: auth.user.verificationStatus,
+    email: email ?? '',
+    confirmEmail: confirmEmail ?? '',
+    verificationSessionId: verificationSessionId ?? '',
+  });
+
+  if (!result.ok) {
+    return c.json({ ok: false, message: result.message, reason: result.reason }, result.status);
+  }
+
+  await logCrmEvent(c.env, {
+    eventType: 'xt_card_discount_process_completed',
+    telegramUserId: auth.user.telegramUserId,
+    title: 'فرایند دریافت تخفیف کارت XT تکمیل شد',
+    details: {
+      discountEmail: result.discountEmail,
+      verificationSessionId: verificationSessionId ?? '',
+    },
+  });
+
+  return c.json({
+    ok: true,
+    message: result.message,
+    discountEmail: result.discountEmail,
+  });
+});
+
 app.post('/api/xt-uid/navigation', async (c) => {
   const { initData, route, verificationSessionId } = await c.req
     .json<{ initData?: string; route?: XtUidFlowRoute; verificationSessionId?: string }>()
@@ -129,7 +167,13 @@ app.post('/api/xt-uid/navigation', async (c) => {
   if (!auth.ok) return c.json(auth, 401);
 
   const normalizedRoute: XtUidFlowRoute =
-    route === 'xt-uid-help' || route === 'xt-registration-guide' || route === 'support' ? route : 'main';
+    route === 'xt-uid-help' ||
+    route === 'xt-registration-guide' ||
+    route === 'support' ||
+    route === 'xt-card-discount-process' ||
+    route === 'xt-card-coupon-video'
+      ? route
+      : 'main';
   if (normalizedRoute !== 'main') {
     await recordXtUidFlowNavigationEvent(c.env, {
       telegramUserId: auth.user.telegramUserId,
@@ -164,6 +208,8 @@ app.get('/crm/*', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.ht
 app.get('/xt-uid-help', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
 app.get('/xt-registration-guide', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
 app.get('/support', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
+app.get('/xt-card-discount-process', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
+app.get('/xt-card-coupon-video', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
 
 app.get('*', async (c) => {
   const assetResponse = await c.env.ASSETS.fetch(c.req.raw);
@@ -330,17 +376,21 @@ async function applyVerificationResult(
 }
 
 async function getUser(env: Env, telegramUserId: string) {
-  const row = await env.DB.prepare(`SELECT telegram_user_id, verification_status, access_level FROM users WHERE telegram_user_id = ?`)
+  const row = await env.DB.prepare(
+    `SELECT telegram_user_id, verification_status, access_level, discount_email AS discountEmail FROM users WHERE telegram_user_id = ?`,
+  )
     .bind(telegramUserId)
     .first<{
       telegram_user_id: string;
       verification_status: VerificationStatus;
       access_level: string;
+      discountEmail: string | null;
     }>();
   return {
     telegramUserId,
     verificationStatus: row?.verification_status ?? 'not_verified',
     accessLevel: row?.access_level ?? 'none',
+    discountEmail: row?.discountEmail ?? null,
   };
 }
 

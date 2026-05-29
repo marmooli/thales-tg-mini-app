@@ -1,4 +1,10 @@
-export type XtUidFlowRoute = 'main' | 'xt-uid-help' | 'xt-registration-guide' | 'support';
+export type XtUidFlowRoute =
+  | 'main'
+  | 'xt-uid-help'
+  | 'xt-registration-guide'
+  | 'support'
+  | 'xt-card-discount-process'
+  | 'xt-card-coupon-video';
 
 export const XT_UID_FLOW_SESSION_STORAGE_KEY = 'thales_xt_uid_verification_session_id';
 
@@ -35,6 +41,10 @@ export function resolveXtUidFlowRoute(pathname: string): XtUidFlowRoute {
       return 'xt-registration-guide';
     case '/support':
       return 'support';
+    case '/xt-card-discount-process':
+      return 'xt-card-discount-process';
+    case '/xt-card-coupon-video':
+      return 'xt-card-coupon-video';
     default:
       return 'main';
   }
@@ -48,6 +58,10 @@ export function getXtUidFlowRoutePath(route: XtUidFlowRoute) {
       return '/xt-registration-guide';
     case 'support':
       return '/support';
+    case 'xt-card-discount-process':
+      return '/xt-card-discount-process';
+    case 'xt-card-coupon-video':
+      return '/xt-card-coupon-video';
     default:
       return '/';
   }
@@ -61,6 +75,10 @@ export function getXtUidFlowPageTitle(route: Exclude<XtUidFlowRoute, 'main'>) {
       return 'راهنمای ثبت‌نام با کد طالس';
     case 'support':
       return 'تماس با پشتیبانی';
+    case 'xt-card-discount-process':
+      return 'فرایند دریافت تخفیف ۳۸ دلاری کارت XT';
+    case 'xt-card-coupon-video':
+      return 'ویدیوی راهنمای فعال کردن رایگان کارت';
   }
 }
 
@@ -84,6 +102,16 @@ export function getXtUidFlowNavigationEvent(route: Exclude<XtUidFlowRoute, 'main
       return {
         eventType: 'xt_support_opened',
         title: 'مشاهده صفحه پشتیبانی',
+      } as const;
+    case 'xt-card-discount-process':
+      return {
+        eventType: 'xt_card_discount_process_opened',
+        title: 'مشاهده فرایند دریافت تخفیف ۳۸ دلاری کارت XT',
+      } as const;
+    case 'xt-card-coupon-video':
+      return {
+        eventType: 'xt_card_coupon_video_opened',
+        title: 'مشاهده ویدیوی راهنمای فعال کردن رایگان کارت',
       } as const;
   }
 }

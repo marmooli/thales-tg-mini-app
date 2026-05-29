@@ -26,7 +26,7 @@ export function buildTelegramStartKeyboard(appUrl: string) {
 }
 
 export function buildBotStartMessage() {
-  return 'به اپلیکیشن مشتری ثالس خوش آمدید.\nبرای تأیید شناسه XT و دسترسی به مزایا، اپ را باز کنید.';
+  return 'لطفاً از طریق دکمۀ زیر وارد مینی‌اپ طالس شوید.';
 }
 
 export function getDiscountAccessCopy(isVerified: boolean) {

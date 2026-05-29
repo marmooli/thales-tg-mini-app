@@ -25,7 +25,7 @@ describe('shared helpers', () => {
   });
 
   it('builds the bot start message', () => {
-    expect(buildBotStartMessage()).toContain('ثالس');
+    expect(buildBotStartMessage()).toBe('لطفاً از طریق دکمۀ زیر وارد مینی‌اپ طالس شوید.');
   });
 
   it('returns locked discount copy for unverified users', () => {

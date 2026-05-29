@@ -54,7 +54,7 @@ body {
   min-height: 100vh;
   padding: 14px 12px 20px;
   display: grid;
-  place-items: center;
+  place-items: start center;
   position: relative;
   overflow: hidden;
 }
@@ -63,6 +63,7 @@ body {
   width: min(100%, 460px);
   display: grid;
   gap: 10px;
+  align-content: start;
   position: relative;
   z-index: 1;
 }
@@ -352,6 +353,13 @@ button:disabled {
   gap: 14px;
 }
 
+.route-card-discount {
+  min-height: calc(100vh - 186px);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 14px;
+}
+
 .route-guide-hero {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -391,6 +399,18 @@ button:disabled {
   object-position: center top;
 }
 
+.route-guide-video-media {
+  padding: 0;
+}
+
+.route-guide-video {
+  display: block;
+  width: 100%;
+  max-height: min(66vh, 640px);
+  background: #050505;
+  object-fit: contain;
+}
+
 .route-guide-back {
   margin-top: auto;
 }
@@ -400,6 +420,58 @@ button:disabled {
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
+}
+
+.discount-process-steps {
+  display: grid;
+  gap: 10px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.discount-process-steps li {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.85;
+}
+
+.discount-process-form {
+  display: grid;
+  gap: 10px;
+}
+
+.discount-process-form .primary,
+.discount-process-next-step .secondary {
+  width: 100%;
+}
+
+.discount-process-form label {
+  margin: 0;
+}
+
+.discount-feedback {
+  min-height: 1.3em;
+  margin-top: -2px;
+  color: #fff0ad;
+}
+
+.discount-success-line {
+  font-weight: 800;
+  color: #22c55e;
+}
+
+.discount-stored-email {
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e8e8e8;
+}
+
+.discount-process-next-step {
+  padding-top: 6px;
+  gap: 12px;
 }
 
 .route-guide-link {
@@ -442,6 +514,10 @@ button:disabled {
   }
 
   .route-card-guide {
+    min-height: calc(100vh - 172px);
+  }
+
+  .route-card-discount {
     min-height: calc(100vh - 172px);
   }
 }
@@ -889,3 +965,5 @@ button:disabled {
     min-width: 760px;
   }
 }
+
+

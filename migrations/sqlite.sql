@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   first_name TEXT,
   last_name TEXT,
   xt_uid TEXT,
+  discount_email TEXT,
   verification_status TEXT NOT NULL DEFAULT 'not_verified',
   access_level TEXT NOT NULL DEFAULT 'none',
   created_at TEXT NOT NULL,

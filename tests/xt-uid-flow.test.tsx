@@ -33,9 +33,13 @@ describe('xt uid flow helpers', () => {
     expect(resolveXtUidFlowRoute('/xt-uid-help')).toBe('xt-uid-help');
     expect(resolveXtUidFlowRoute('/xt-registration-guide')).toBe('xt-registration-guide');
     expect(resolveXtUidFlowRoute('/support')).toBe('support');
+    expect(resolveXtUidFlowRoute('/xt-card-discount-process')).toBe('xt-card-discount-process');
+    expect(resolveXtUidFlowRoute('/xt-card-coupon-video')).toBe('xt-card-coupon-video');
     expect(getXtUidFlowPageTitle('xt-uid-help')).toBe('راهنمای پیدا کردن UID');
     expect(getXtUidFlowPageTitle('xt-registration-guide')).toBe('راهنمای ثبت‌نام با کد طالس');
     expect(getXtUidFlowPageTitle('support')).toBe('تماس با پشتیبانی');
+    expect(getXtUidFlowPageTitle('xt-card-discount-process')).toBe('فرایند دریافت تخفیف ۳۸ دلاری کارت XT');
+    expect(getXtUidFlowPageTitle('xt-card-coupon-video')).toBe('ویدیوی راهنمای فعال کردن رایگان کارت');
     expect(getXtUidFlowBackLabel()).toBe('بازگشت');
   });
 
@@ -81,5 +85,12 @@ describe('xt uid flow helpers', () => {
     expect(registrationHtml).toContain('لینک کاربران خارج از ایران');
     expect(registrationHtml).toContain('پس از بازکردن حساب با کد طالس مجدداً به مینی‌اپ بازگردید');
     expect(registrationHtml).toContain('https://www.xtcorenet.com/fa/accounts/register?ref=THALES');
+
+    const videoHtml = renderToStaticMarkup(
+      <RoutePlaceholderPage title="ویدیوی راهنمای فعال کردن رایگان کارت" onBack={() => undefined} />,
+    );
+
+    expect(videoHtml).toContain('ویدیوی راهنمای فعال کردن رایگان کارت');
+    expect(videoHtml).toContain('بازگشت');
   });
 });
