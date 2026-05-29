@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { CrmApp } from './crm-app';
 import { copy } from './copy';
 import { getCouponSentStatus } from './coupon-sent';
+import { XT_CAMPAIGN_ROUTE_PATH, XtCampaignLandingPage } from './xt-campaign';
 import {
   blockPaste,
   XT_CARD_COUPON_VIDEO_PATH,
@@ -407,6 +408,18 @@ function MiniApp() {
   if (loading) return <Shell title={copy.title} verified={false}>{copy.loading}</Shell>;
 
   if (route !== 'main') {
+    if (route === 'xt-campaign') {
+      return (
+        <Shell title={copy.title} verified={status === 'verified'}>
+          {statusMessage ? <p className="lead page-message">{statusMessage}</p> : null}
+          <XtCampaignLandingPage
+            onOpenDiscountProcess={() => navigateTo(setRoute, XT_CARD_DISCOUNT_PROCESS_PATH)}
+            onBack={() => navigateTo(setRoute, '/')}
+          />
+        </Shell>
+      );
+    }
+
     if (route === 'xt-uid-help') {
       return (
         <Shell title={copy.title} verified={status === 'verified'}>
@@ -548,6 +561,44 @@ function MiniApp() {
           ) : null}
         </section>
       ) : null}
+
+      <section className="card stack panel-accent campaign-entry-card">
+        <div className="section-title">
+          <h2>معرفی کارت اعتباری XT</h2>
+          <div className="status-lock status-lock-open" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M8 11V8a4 4 0 0 1 4-4c1.7 0 3.2 1 3.8 2.6"
+                fill="none"
+                stroke="#22c55e"
+                strokeWidth="2.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M4.5 10.5h9.8a2.2 2.2 0 0 1 2.2 2.2v5.8a2.2 2.2 0 0 1-2.2 2.2H4.5a2.2 2.2 0 0 1-2.2-2.2v-5.8a2.2 2.2 0 0 1 2.2-2.2Z"
+                fill="none"
+                stroke="#22c55e"
+                strokeWidth="2.3"
+                strokeLinejoin="round"
+              />
+              <circle cx="9.4" cy="15.4" r="1.2" fill="#22c55e" />
+            </svg>
+          </div>
+        </div>
+        <div className="campaign-entry-shell">
+          <div className="campaign-entry-copy">
+            <p>کارت XT چیست و چه مزایایی دارد</p>
+            <button
+              className="primary campaign-entry-button"
+              type="button"
+              onClick={() => navigateTo(setRoute, XT_CAMPAIGN_ROUTE_PATH)}
+            >
+              معرفی کارت اعتباری XT
+            </button>
+          </div>
+        </div>
+      </section>
 
       <section className="card stack">
         <div className="section-title">

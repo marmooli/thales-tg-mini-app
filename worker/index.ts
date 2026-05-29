@@ -176,6 +176,7 @@ app.post('/api/xt-uid/navigation', async (c) => {
   if (!auth.ok) return c.json(auth, 401);
 
   const normalizedRoute: XtUidFlowRoute =
+    route === 'xt-campaign' ||
     route === 'xt-uid-help' ||
     route === 'xt-registration-guide' ||
     route === 'support' ||
@@ -225,6 +226,7 @@ app.post('/api/telegram/webhook', async (c) => {
 
 app.get('/crm', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
 app.get('/crm/*', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
+app.get('/xt-campaign', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
 app.get('/xt-uid-help', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
 app.get('/xt-registration-guide', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));
 app.get('/support', async (c) => c.env.ASSETS.fetch(new Request(new URL('/index.html', c.req.url))));

@@ -1,6 +1,7 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { XtCampaignLandingPage } from '../src/xt-campaign';
 import {
   getOrCreateVerificationSessionId,
   getXtUidFlowBackLabel,
@@ -30,11 +31,13 @@ describe('xt uid flow helpers', () => {
   });
 
   it('resolves helper routes and page titles', () => {
+    expect(resolveXtUidFlowRoute('/xt-campaign')).toBe('xt-campaign');
     expect(resolveXtUidFlowRoute('/xt-uid-help')).toBe('xt-uid-help');
     expect(resolveXtUidFlowRoute('/xt-registration-guide')).toBe('xt-registration-guide');
     expect(resolveXtUidFlowRoute('/support')).toBe('support');
     expect(resolveXtUidFlowRoute('/xt-card-discount-process')).toBe('xt-card-discount-process');
     expect(resolveXtUidFlowRoute('/xt-card-coupon-video')).toBe('xt-card-coupon-video');
+    expect(getXtUidFlowPageTitle('xt-campaign')).toBe('صفحه فرود XT Card');
     expect(getXtUidFlowPageTitle('xt-uid-help')).toBe('راهنمای پیدا کردن UID');
     expect(getXtUidFlowPageTitle('xt-registration-guide')).toBe('راهنمای ثبت‌نام با کد طالس');
     expect(getXtUidFlowPageTitle('support')).toBe('تماس با پشتیبانی');
@@ -47,6 +50,17 @@ describe('xt uid flow helpers', () => {
     expect(shouldRevealXtUidSupport(0)).toBe(false);
     expect(shouldRevealXtUidSupport(2)).toBe(false);
     expect(shouldRevealXtUidSupport(3)).toBe(true);
+  });
+
+  it('renders the xt campaign landing page with a home entry and discount action', () => {
+    const html = renderToStaticMarkup(
+      <XtCampaignLandingPage onOpenDiscountProcess={() => undefined} onBack={() => undefined} />,
+    );
+
+    expect(html).toContain('صفحه فرود کمپین XT Card');
+    expect(html).toContain('شروع فرایند دریافت تخفیف ۳۸ دلاری');
+    expect(html).toContain('/assets/monitor-card.jpg');
+    expect(html).toContain('/assets/card-mobile-vertical.jpg');
   });
 
   it('renders helper pages with their expected content and back actions', async () => {
@@ -84,7 +98,7 @@ describe('xt uid flow helpers', () => {
     expect(registrationHtml).toContain('لینک کاربران داخل ایران (اینترنت بین‌المللی)');
     expect(registrationHtml).toContain('لینک کاربران خارج از ایران');
     expect(registrationHtml).toContain('پس از بازکردن حساب با کد طالس مجدداً به مینی‌اپ بازگردید');
-    expect(registrationHtml).toContain('https://www.xtcorenet.com/fa/accounts/register?ref=THALES');
+    expect(registrationHtml).toContain('https://www.xtcorenet.com/fa/accounts/register?ref=THALES3');
 
     const videoHtml = renderToStaticMarkup(
       <RoutePlaceholderPage title="ویدیوی راهنمای فعال کردن رایگان کارت" onBack={() => undefined} />,
