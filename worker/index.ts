@@ -2,12 +2,14 @@
 import { Hono } from 'hono';
 import {
   buildBotStartMessage,
+  buildTelegramMenuButton,
   buildTelegramStartKeyboard,
   getDiscountAccessCopy,
   normalizeUid,
   type VerificationStatus,
 } from '../src/shared';
 import { logCrmEvent, registerCrmRoutes } from '../src/crm-server';
+import { getCouponSentState, getCouponSentStatus } from '../src/coupon-sent';
 import { getDiscountEmailState, saveDiscountEmail } from '../src/xt-card-discount-server';
 import {
   getFailedXtUidAttemptCount,
@@ -16,6 +18,7 @@ import {
 } from '../src/xt-uid-flow-server';
 import { type XtUidFlowRoute } from '../src/xt-uid-flow';
 import { verifyXtReferral } from '../src/xt-verification';
+import { sendTelegramMessage } from '../src/telegram-bot';
 
 type Env = {
   TELEGRAM_BOT_TOKEN: string;
@@ -49,6 +52,7 @@ app.post('/api/me', async (c) => {
   if (!user.ok) return c.json(user, 401);
   const failedAttemptsInSession = await getFailedXtUidAttemptCount(c.env, user.user.telegramUserId, verificationSessionId ?? '');
   const discountEmailState = await getDiscountEmailState(c.env, user.user.telegramUserId);
+  const couponSentState = await getCouponSentState(c.env, user.user.telegramUserId);
   return c.json({
     ok: true,
     user: {
@@ -58,6 +62,8 @@ app.post('/api/me', async (c) => {
       discountEmail: user.user.discountEmail,
       discountEmailSentAt: discountEmailState.discountEmailSentAt,
       discountEmailStatus: getDiscountEmailStatus(user.user.discountEmail, discountEmailState.discountEmailSentAt),
+      couponSentAt: couponSentState.couponSentAt,
+      couponSentStatus: getCouponSentStatus(couponSentState.couponSentAt),
       features: { xtCard48Discount: user.user.verificationStatus === 'verified' },
     },
     verificationFlow: {
@@ -194,16 +200,22 @@ app.post('/api/feature/xt-card-48', async (c) => {
   if (!auth.ok) return c.json(auth, 401);
   const discount = getDiscountAccessCopy(auth.user.verificationStatus === 'verified');
   const discountEmailState = await getDiscountEmailState(c.env, auth.user.telegramUserId);
+  const couponSentState = await getCouponSentState(c.env, auth.user.telegramUserId);
   return c.json({
     ok: true,
     ...discount,
     discountEmailStatus: getDiscountEmailStatus(auth.user.discountEmail, discountEmailState.discountEmailSentAt),
+    couponSentAt: couponSentState.couponSentAt,
+    couponSentStatus: getCouponSentStatus(couponSentState.couponSentAt),
   });
 });
 
 app.post('/api/telegram/webhook', async (c) => {
   const update = await c.req.json<any>().catch(() => null);
   if (!update) return c.json({ ok: false }, 400);
+  await ensureTelegramMenuButton(c.env).catch((error) => {
+    console.warn('telegram menu button setup failed', error);
+  });
   if (update.message?.text === '/start' && update.message?.chat?.id) {
     const chatId = update.message.chat.id;
     await sendTelegramMessage(c.env, chatId, buildBotStartMessage(), buildTelegramStartKeyboard(c.env.APP_BASE_URL));
@@ -409,19 +421,17 @@ function getDiscountEmailStatus(discountEmail: string | null, discountEmailSentA
   return discountEmailSentAt ? ('sent' as const) : ('pending_review' as const);
 }
 
-async function sendTelegramMessage(env: Env, chatId: number | string, text: string, replyMarkup?: unknown) {
-  const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+async function ensureTelegramMenuButton(env: Env) {
+  const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/setChatMenuButton`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      reply_markup: replyMarkup,
+      menu_button: buildTelegramMenuButton(env.APP_BASE_URL),
     }),
   });
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`Telegram sendMessage failed: ${response.status} ${body}`);
+    throw new Error(`Telegram setChatMenuButton failed: ${response.status} ${body}`);
   }
 }
 

@@ -25,6 +25,14 @@ export function buildTelegramStartKeyboard(appUrl: string) {
   };
 }
 
+export function buildTelegramMenuButton(appUrl: string) {
+  return {
+    type: 'web_app',
+    text: 'Open Thales App',
+    web_app: { url: appUrl },
+  };
+}
+
 export function buildBotStartMessage() {
   return 'لطفاً از طریق دکمۀ زیر وارد مینی‌اپ طالس شوید.';
 }

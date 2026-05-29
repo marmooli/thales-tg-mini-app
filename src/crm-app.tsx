@@ -27,6 +27,7 @@ type CrmListRow = {
   xtUid: string | null;
   discountEmail: string | null;
   discountEmailSentAt: string | null;
+  couponSentAt: string | null;
   verificationStatus: string;
   accessLevel: string;
   createdAt: string;
@@ -616,8 +617,11 @@ function UserDetailView({
   const user = detail?.user;
   const activity = detail?.activity ?? [];
   const canEditDiscountEmail = currentUserRole !== 'viewer';
+  const canEditCouponSent = currentUserRole !== 'viewer';
   const [discountEmailSaving, setDiscountEmailSaving] = useState(false);
   const [discountEmailActionError, setDiscountEmailActionError] = useState<string | null>(null);
+  const [couponSentSaving, setCouponSentSaving] = useState(false);
+  const [couponSentActionError, setCouponSentActionError] = useState<string | null>(null);
 
   async function updateDiscountEmailStatus(status: 'sent' | 'pending_review') {
     setDiscountEmailSaving(true);
@@ -639,6 +643,29 @@ function UserDetailView({
       setDiscountEmailActionError('به‌روزرسانی وضعیت انجام نشد.');
     } finally {
       setDiscountEmailSaving(false);
+    }
+  }
+
+  async function updateCouponSentStatus(status: 'sent' | 'none') {
+    setCouponSentSaving(true);
+    setCouponSentActionError(null);
+    try {
+      const response = await fetch(`/api/crm/users/${encodeURIComponent(telegramUserId)}/coupon-sent-status`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      const data = (await response.json()) as { ok: boolean; message?: string; couponSentAt?: string | null };
+      if (!response.ok || !data.ok) {
+        setCouponSentActionError(data.message ?? 'به‌روزرسانی وضعیت انجام نشد.');
+        return;
+      }
+      window.location.reload();
+    } catch {
+      setCouponSentActionError('به‌روزرسانی وضعیت انجام نشد.');
+    } finally {
+      setCouponSentSaving(false);
     }
   }
 
@@ -721,6 +748,36 @@ function UserDetailView({
               {discountEmailActionError ? <p className="crm-feedback crm-feedback-error">{discountEmailActionError}</p> : null}
             </section>
           ) : null}
+
+          <section className="crm-detail-card stack">
+            <h3>وضعیت کوپن ۳۸ دلاری</h3>
+            <dl>
+              <dt>وضعیت</dt>
+              <dd>
+                {user.couponSentAt ? (
+                  <span className="crm-status crm-status-verified">ارسال شد</span>
+                ) : (
+                  <span className="crm-status crm-status-pending_review">در انتظار ارسال</span>
+                )}
+              </dd>
+              <dt>آخرین تغییر وضعیت</dt>
+              <dd>{user.couponSentAt ? formatDateTime(user.couponSentAt) : '—'}</dd>
+            </dl>
+            {canEditCouponSent ? (
+              <div className="crm-inline-actions">
+                {user.couponSentAt ? (
+                  <button className="secondary" type="button" onClick={() => void updateCouponSentStatus('none')} disabled={couponSentSaving}>
+                    بازگشت به بررسی
+                  </button>
+                ) : (
+                  <button className="primary" type="button" onClick={() => void updateCouponSentStatus('sent')} disabled={couponSentSaving}>
+                    کوپن ۳۸ دلاری ارسال شد
+                  </button>
+                )}
+              </div>
+            ) : null}
+            {couponSentActionError ? <p className="crm-feedback crm-feedback-error">{couponSentActionError}</p> : null}
+          </section>
 
           <section className="crm-detail-card">
             <h3>تایم‌لاین فعالیت</h3>

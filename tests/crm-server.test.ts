@@ -7,6 +7,7 @@ describe('crm server guards', () => {
     const app = new Hono<{
       Bindings: {
         DB: D1Database;
+        TELEGRAM_BOT_TOKEN: string;
         CRM_SESSION_SECRET: string;
       };
     }>();
@@ -21,6 +22,7 @@ describe('crm server guards', () => {
             throw new Error('DB should not be called for missing CRM session');
           },
         } as D1Database,
+        TELEGRAM_BOT_TOKEN: 'bot-token',
         CRM_SESSION_SECRET: 'secret',
       },
     );

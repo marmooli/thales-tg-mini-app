@@ -326,6 +326,11 @@ button:disabled {
   line-height: 1.65;
 }
 
+.feedback-error {
+  color: #ef4444;
+  font-weight: 800;
+}
+
 .xt-helper-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -464,9 +469,22 @@ button:disabled {
   letter-spacing: -0.01em;
 }
 
+.discount-sent-badge {
+  display: block;
+  margin-top: 8px;
+  color: #22c55e;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-shadow: 0 0 16px rgba(34, 197, 94, 0.15);
+}
+
 .discount-success-line {
   font-weight: 800;
   color: #22c55e;
+}
+
+.discount-step3-emphasis {
+  font-weight: 800;
 }
 
 .discount-stored-email {

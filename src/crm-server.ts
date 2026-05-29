@@ -22,9 +22,12 @@ import {
   verifySignedSession,
   serializeCrmTimelineEvent,
 } from './crm-logic';
+import { getCouponSentState, setCouponSentState } from './coupon-sent';
+import { buildCouponSentNotificationMessage, sendTelegramMessage } from './telegram-bot';
 
 type CrmEnv = {
   DB: D1Database;
+  TELEGRAM_BOT_TOKEN: string;
   CRM_SESSION_SECRET?: string;
   CRM_BOOTSTRAP_USERNAME?: string;
   CRM_BOOTSTRAP_PASSWORD?: string;
@@ -191,6 +194,83 @@ export function registerCrmRoutes<AppEnv extends CrmEnv>(app: Hono<{ Bindings: A
     });
 
     return c.json({ ok: true, discountEmailStatus: status, discountEmailSentAt: updated.discountEmailSentAt });
+  });
+
+  app.post('/api/crm/users/:telegramUserId/coupon-sent-status', async (c) => {
+    const auth = await requireCrmAuth(c);
+    if (!auth.ok) return c.json(auth.body, auth.status);
+    if (auth.user.role === 'viewer') {
+      return c.json({ ok: false, message: 'شما اجازه تغییر این وضعیت را ندارید.' }, 403);
+    }
+
+    const telegramUserId = c.req.param('telegramUserId');
+    const body = await c.req.json<{ status?: 'sent' | 'none' }>().catch(() => ({ status: '' }));
+    const status = body.status === 'sent' || body.status === 'none' ? body.status : '';
+    if (!status) {
+      return c.json({ ok: false, message: 'وضعیت نامعتبر است.' }, 400);
+    }
+
+    const existingUser = await c.env.DB.prepare(`SELECT telegram_user_id FROM users WHERE telegram_user_id = ?`)
+      .bind(telegramUserId)
+      .first<{ telegram_user_id: string }>();
+    if (!existingUser) {
+      return c.json({ ok: false, message: 'کاربر پیدا نشد.' }, 404);
+    }
+
+    const current = await getCouponSentState(c.env, telegramUserId);
+
+    if (status === 'none') {
+      const updated = await setCouponSentState(c.env, telegramUserId, null);
+      if (current.couponSentAt) {
+        await logCrmEvent(c.env, {
+          eventType: 'crm_mark_coupon_pending_review',
+          crmUserId: auth.user.id,
+          actorRole: auth.user.role,
+          telegramUserId,
+          title: 'کوپن به بررسی بازگشت',
+          details: { telegramUserId, status: 'none' },
+        });
+      }
+      return c.json({ ok: true, couponSentAt: updated.couponSentAt });
+    }
+
+    if (current.couponSentAt) {
+      return c.json({ ok: true, couponSentAt: current.couponSentAt });
+    }
+
+    try {
+      await sendTelegramMessage(c.env, telegramUserId, buildCouponSentNotificationMessage());
+    } catch (error) {
+      await logCrmEvent(c.env, {
+        eventType: 'crm_coupon_notification_failed',
+        crmUserId: auth.user.id,
+        actorRole: auth.user.role,
+        telegramUserId,
+        title: 'ارسال پیام کوپن موفق نبود',
+        details: {
+          telegramUserId,
+          status: 'sent',
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
+      return c.json({ ok: false, message: 'ارسال پیام به کاربر موفق نبود.' }, 502);
+    }
+
+    const updated = await setCouponSentState(c.env, telegramUserId, new Date().toISOString());
+    await logCrmEvent(c.env, {
+      eventType: 'crm_mark_coupon_sent',
+      crmUserId: auth.user.id,
+      actorRole: auth.user.role,
+      telegramUserId,
+      title: 'کوپن برای کاربر اعلام شد',
+      details: {
+        telegramUserId,
+        status: 'sent',
+        couponSentAt: updated.couponSentAt,
+      },
+    });
+
+    return c.json({ ok: true, couponSentAt: updated.couponSentAt });
   });
 }
 
@@ -471,6 +551,7 @@ async function listCrmUsers(env: CrmEnv, filters: {
       u.xt_uid AS xtUid,
       u.verification_status AS verificationStatus,
       u.access_level AS accessLevel,
+      u.coupon_sent_at AS couponSentAt,
       u.created_at AS createdAt,
       u.updated_at AS updatedAt,
       u.verified_at AS verifiedAt,
@@ -507,6 +588,7 @@ async function getCrmUserDetail(env: CrmEnv, telegramUserId: string) {
       u.discount_email_sent_at AS discountEmailSentAt,
       u.verification_status AS verificationStatus,
       u.access_level AS accessLevel,
+      u.coupon_sent_at AS couponSentAt,
       u.created_at AS createdAt,
       u.updated_at AS updatedAt,
       u.verified_at AS verifiedAt,
@@ -524,7 +606,7 @@ async function getCrmUserDetail(env: CrmEnv, telegramUserId: string) {
   if (!user) return null;
 
   const activity = await env.DB.prepare(
-    `SELECT id, event_type, telegram_user_id, crm_user_id, xt_uid, actor_role, title, details_json, created_at
+    `SELECT id, event_type, telegram_user_id, crm_user_id, xt_uid, actor_role, title, details_json, created_at AS createdAt
      FROM crm_activity_events
      WHERE telegram_user_id = ?
      ORDER BY created_at DESC, id DESC
@@ -567,7 +649,7 @@ async function setDiscountEmailStatus(env: CrmEnv, telegramUserId: string, statu
 }
 
 export async function logCrmEvent(
-  env: CrmEnv,
+  env: { DB: D1Database },
   event: {
     eventType: string;
     title: string;

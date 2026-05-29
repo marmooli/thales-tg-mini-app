@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildBotStartMessage,
+  buildTelegramMenuButton,
   buildTelegramStartKeyboard,
   getDiscountAccessCopy,
   isUidAllowedByFormat,
   normalizeUid,
+  toPersianDigits,
 } from '../src/shared';
 
 describe('shared helpers', () => {
@@ -18,10 +20,21 @@ describe('shared helpers', () => {
     expect(isUidAllowedByFormat('not valid!')).toBe(false);
   });
 
+  it('converts digits to Persian digits', () => {
+    expect(toPersianDigits('38')).toBe('۳۸');
+  });
+
   it('builds the Telegram start button payload', () => {
     const keyboard = buildTelegramStartKeyboard('https://example.com/app');
     expect(keyboard.inline_keyboard[0][0].text).toBe('Open Thales App');
     expect(keyboard.inline_keyboard[0][0].web_app.url).toBe('https://example.com/app');
+  });
+
+  it('builds the Telegram menu button payload', () => {
+    const button = buildTelegramMenuButton('https://example.com/app');
+    expect(button.type).toBe('web_app');
+    expect(button.text).toBe('Open Thales App');
+    expect(button.web_app.url).toBe('https://example.com/app');
   });
 
   it('builds the bot start message', () => {
@@ -31,6 +44,6 @@ describe('shared helpers', () => {
   it('returns locked discount copy for unverified users', () => {
     const copy = getDiscountAccessCopy(false);
     expect(copy.allowed).toBe(false);
-    expect(copy.body).toContain('فقط پس از تأیید');
+    expect(copy.body).toContain('این بخش فقط پس از تأیید');
   });
 });

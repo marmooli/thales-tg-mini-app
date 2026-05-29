@@ -29,6 +29,7 @@ export type CrmUserListRow = {
   xtUid: string | null;
   discountEmail?: string | null;
   discountEmailSentAt?: string | null;
+  couponSentAt?: string | null;
   verificationStatus: string;
   accessLevel: string;
   createdAt: string;

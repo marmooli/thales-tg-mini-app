@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CrmApp } from './crm-app';
 import { copy } from './copy';
+import { getCouponSentStatus } from './coupon-sent';
 import {
   blockPaste,
   XT_CARD_COUPON_VIDEO_PATH,
@@ -19,9 +20,10 @@ import { normalizeUid } from './shared';
 const thalesRoundLogoUrl = '/assets/thales-logo-round-yellow.svg';
 const xtUidGuideImageUrl = '/assets/xt-uid-guide-v2.jpg';
 const xtCardActivationVideoUrl = '/assets/XT card activation.mp4';
-const xtRegistrationLinkDomestic = 'https://www.xtcorenet.com/fa/accounts/register?ref=THALES';
-const xtRegistrationLinkInternational = 'https://www.xtfarsi.net/fa/accounts/register?ref=THALES';
-const xtRegistrationLinkOutsideIran = 'https://www.xt.com/fa/accounts/register?ref=THALES';
+const supportTelegramUrl = 'https://t.me/Ssameti';
+const xtRegistrationLinkDomestic = 'https://www.xtcorenet.com/fa/accounts/register?ref=THALES3';
+const xtRegistrationLinkInternational = 'https://www.xtfarsi.net/fa/accounts/register?ref=THALES3';
+const xtRegistrationLinkOutsideIran = 'https://www.xt.com/fa/accounts/register?ref=THALES3';
 const isLocalDev =
   import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
@@ -84,6 +86,8 @@ type MeResponse =
         discountEmail: string | null;
         discountEmailSentAt: string | null;
         discountEmailStatus: 'none' | 'pending_review' | 'sent';
+        couponSentAt: string | null;
+        couponSentStatus: 'none' | 'sent';
         features: { xtCard48Discount: boolean };
       };
       verificationFlow: {
@@ -94,7 +98,16 @@ type MeResponse =
   | { ok: false; message: string };
 
 type FeatureResponse =
-  | { ok: true; allowed: boolean; title: string; body: string; cta: string; discountEmailStatus: 'none' | 'pending_review' | 'sent' }
+  | {
+      ok: true;
+      allowed: boolean;
+      title: string;
+      body: string;
+      cta: string;
+      discountEmailStatus: 'none' | 'pending_review' | 'sent';
+      couponSentAt: string | null;
+      couponSentStatus: 'none' | 'sent';
+    }
   | { ok: false; message: string };
 
 type VerifyResponse =
@@ -133,6 +146,7 @@ function MiniApp() {
   const [discountCopy, setDiscountCopy] = useState<{ title: string; body: string; cta: string; allowed: boolean } | null>(null);
   const [storedDiscountEmail, setStoredDiscountEmail] = useState('');
   const [discountEmailStatus, setDiscountEmailStatus] = useState<'none' | 'pending_review' | 'sent'>('none');
+  const [couponSentStatus, setCouponSentStatus] = useState<'none' | 'sent'>('none');
   const [discountEmailInput, setDiscountEmailInput] = useState('');
   const [discountEmailConfirmation, setDiscountEmailConfirmation] = useState('');
   const [discountEmailFeedback, setDiscountEmailFeedback] = useState<string | null>(null);
@@ -217,6 +231,7 @@ function MiniApp() {
           setVerificationFlow(data.verificationFlow);
           setStoredDiscountEmail(data.user.discountEmail ?? '');
           setDiscountEmailStatus(data.user.discountEmailStatus);
+          setCouponSentStatus(getCouponSentStatus(data.user.couponSentAt));
           setDiscountEmailSuccess(data.user.verificationStatus === 'verified' && Boolean(data.user.discountEmail));
           setStatusMessage(null);
         } else {
@@ -246,6 +261,7 @@ function MiniApp() {
         if (data.ok) {
           setDiscountCopy(data);
           setDiscountEmailStatus(data.discountEmailStatus);
+          setCouponSentStatus(getCouponSentStatus(data.couponSentAt));
         }
       } catch {
         setDiscountCopy(null);
@@ -457,6 +473,15 @@ function MiniApp() {
       );
     }
 
+    if (route === 'support') {
+      return (
+        <Shell title={copy.title} verified={status === 'verified'}>
+          {statusMessage ? <p className="lead page-message">{statusMessage}</p> : null}
+          <RouteSupportPage title={getXtUidFlowPageTitle(route)} supportUrl={supportTelegramUrl} onBack={() => navigateTo(setRoute, '/')} />
+        </Shell>
+      );
+    }
+
     return (
       <Shell title={copy.title} verified={status === 'verified'}>
         {statusMessage ? <p className="lead page-message">{statusMessage}</p> : null}
@@ -500,7 +525,7 @@ function MiniApp() {
             </button>
           </form>
           {submitFeedback ? (
-            <p className="feedback" aria-live="polite" aria-atomic="true">
+            <p className="feedback feedback-error" aria-live="polite" aria-atomic="true">
               {submitFeedback}
             </p>
           ) : null}
@@ -563,7 +588,11 @@ function MiniApp() {
             )}
           </div>
         </div>
-        {discountEmailStatus === 'pending_review' ? <strong className="discount-review-badge">در دست بررسی...</strong> : null}
+        {couponSentStatus === 'sent' ? (
+          <strong className="discount-sent-badge">کوپن ۳۸ دلاری ارسال شد</strong>
+        ) : discountEmailStatus === 'pending_review' ? (
+          <strong className="discount-review-badge">در دست بررسی...</strong>
+        ) : null}
         {discountCopy?.allowed ? (
           <>
             <button className="secondary" type="button" onClick={() => navigateTo(setRoute, XT_CARD_DISCOUNT_PROCESS_PATH)}>
@@ -663,6 +692,39 @@ export function RouteVideoGuidePage({
             مرورگر شما از پخش ویدیو پشتیبانی نمی‌کند.
           </video>
         </div>
+      </div>
+      <button className="secondary xt-helper-button route-guide-back route-guide-button" type="button" onClick={onBack}>
+        {getXtUidFlowBackLabel()}
+      </button>
+    </section>
+  );
+}
+
+export function RouteSupportPage({
+  title,
+  supportUrl,
+  onBack,
+}: {
+  title: string;
+  supportUrl: string;
+  onBack: () => void;
+}) {
+  return (
+    <section className="card route-card route-card-guide route-card-support">
+      <div className="route-guide-hero">
+        <div className="section-title route-guide-title">
+          <h2>{title}</h2>
+        </div>
+        <p className="route-guide-copy">
+          برای دریافت پشتیبانی مستقیماً از طریق تلگرام با آقای صامتی (
+          <a href={supportUrl} target="_blank" rel="noreferrer">
+            {supportUrl}
+          </a>
+          ) از پشتیبانی طالس تماس بگیرید و مورد خود را با ایشان مطرح کنید تا پیگیری بشود.
+        </p>
+        <a className="secondary xt-helper-button route-guide-button" href={supportUrl} target="_blank" rel="noreferrer">
+          باز کردن چت
+        </a>
       </div>
       <button className="secondary xt-helper-button route-guide-back route-guide-button" type="button" onClick={onBack}>
         {getXtUidFlowBackLabel()}
@@ -823,7 +885,7 @@ function DiscountProcessPage({
             <p className="route-guide-copy discount-success-line">
               ایمیل شما با موفقیت ذخیره شد: {storedDiscountEmail || email}
             </p>
-            <p className="route-guide-copy">{copy.discountProcess.step3}</p>
+            <p className="route-guide-copy discount-step3-emphasis">{copy.discountProcess.step3}</p>
             <p className="route-guide-copy">{copy.discountProcess.step4}</p>
             <button className="secondary route-guide-button" type="button" onClick={onOpenVideo}>
               {copy.discountProcess.videoAction}
