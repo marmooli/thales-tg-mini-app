@@ -82,6 +82,8 @@ type MeResponse =
         verificationStatus: Status;
         accessLevel: string;
         discountEmail: string | null;
+        discountEmailSentAt: string | null;
+        discountEmailStatus: 'none' | 'pending_review' | 'sent';
         features: { xtCard48Discount: boolean };
       };
       verificationFlow: {
@@ -92,7 +94,7 @@ type MeResponse =
   | { ok: false; message: string };
 
 type FeatureResponse =
-  | { ok: true; allowed: boolean; title: string; body: string; cta: string }
+  | { ok: true; allowed: boolean; title: string; body: string; cta: string; discountEmailStatus: 'none' | 'pending_review' | 'sent' }
   | { ok: false; message: string };
 
 type VerifyResponse =
@@ -130,6 +132,7 @@ function MiniApp() {
   const [features, setFeatures] = useState({ xtCard48Discount: false });
   const [discountCopy, setDiscountCopy] = useState<{ title: string; body: string; cta: string; allowed: boolean } | null>(null);
   const [storedDiscountEmail, setStoredDiscountEmail] = useState('');
+  const [discountEmailStatus, setDiscountEmailStatus] = useState<'none' | 'pending_review' | 'sent'>('none');
   const [discountEmailInput, setDiscountEmailInput] = useState('');
   const [discountEmailConfirmation, setDiscountEmailConfirmation] = useState('');
   const [discountEmailFeedback, setDiscountEmailFeedback] = useState<string | null>(null);
@@ -213,6 +216,7 @@ function MiniApp() {
           setFeatures(data.user.features);
           setVerificationFlow(data.verificationFlow);
           setStoredDiscountEmail(data.user.discountEmail ?? '');
+          setDiscountEmailStatus(data.user.discountEmailStatus);
           setDiscountEmailSuccess(data.user.verificationStatus === 'verified' && Boolean(data.user.discountEmail));
           setStatusMessage(null);
         } else {
@@ -239,7 +243,10 @@ function MiniApp() {
           body: JSON.stringify({ initData }),
         });
         const data = (await res.json()) as FeatureResponse;
-        if (data.ok) setDiscountCopy(data);
+        if (data.ok) {
+          setDiscountCopy(data);
+          setDiscountEmailStatus(data.discountEmailStatus);
+        }
       } catch {
         setDiscountCopy(null);
       }
@@ -355,6 +362,7 @@ function MiniApp() {
       if (data.ok) {
         setStoredDiscountEmail(data.discountEmail);
         setDiscountEmailInput(data.discountEmail);
+        setDiscountEmailStatus('pending_review');
         setDiscountEmailConfirmation('');
         setDiscountEmailSuccess(true);
         setDiscountEmailFeedback(data.message);
@@ -555,6 +563,7 @@ function MiniApp() {
             )}
           </div>
         </div>
+        {discountEmailStatus === 'pending_review' ? <strong className="discount-review-badge">در دست بررسی...</strong> : null}
         {discountCopy?.allowed ? (
           <>
             <button className="secondary" type="button" onClick={() => navigateTo(setRoute, XT_CARD_DISCOUNT_PROCESS_PATH)}>

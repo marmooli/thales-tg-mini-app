@@ -8,15 +8,19 @@ type DiscountServerEnv = {
 
 export type DiscountEmailState = {
   discountEmail: string | null;
+  discountEmailSentAt: string | null;
 };
 
 export async function getDiscountEmailState(env: DiscountServerEnv, telegramUserId: string): Promise<DiscountEmailState> {
-  const row = await env.DB.prepare(`SELECT discount_email AS discountEmail FROM users WHERE telegram_user_id = ?`)
+  const row = await env.DB.prepare(
+    `SELECT discount_email AS discountEmail, discount_email_sent_at AS discountEmailSentAt FROM users WHERE telegram_user_id = ?`,
+  )
     .bind(telegramUserId)
-    .first<{ discountEmail: string | null }>();
+    .first<{ discountEmail: string | null; discountEmailSentAt: string | null }>();
 
   return {
     discountEmail: row?.discountEmail ?? null,
+    discountEmailSentAt: row?.discountEmailSentAt ?? null,
   };
 }
 
@@ -81,7 +85,7 @@ export async function saveDiscountEmail(
   const now = new Date().toISOString();
   await env.DB.prepare(
     `UPDATE users
-     SET discount_email = ?, updated_at = ?
+     SET discount_email = ?, discount_email_sent_at = NULL, updated_at = ?
      WHERE telegram_user_id = ?`,
   )
     .bind(validation.email, now, params.telegramUserId)

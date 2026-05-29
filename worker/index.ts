@@ -8,7 +8,7 @@ import {
   type VerificationStatus,
 } from '../src/shared';
 import { logCrmEvent, registerCrmRoutes } from '../src/crm-server';
-import { saveDiscountEmail } from '../src/xt-card-discount-server';
+import { getDiscountEmailState, saveDiscountEmail } from '../src/xt-card-discount-server';
 import {
   getFailedXtUidAttemptCount,
   recordXtUidFlowNavigationEvent,
@@ -48,6 +48,7 @@ app.post('/api/me', async (c) => {
   const user = await authenticateTelegram(c.env, initData ?? '');
   if (!user.ok) return c.json(user, 401);
   const failedAttemptsInSession = await getFailedXtUidAttemptCount(c.env, user.user.telegramUserId, verificationSessionId ?? '');
+  const discountEmailState = await getDiscountEmailState(c.env, user.user.telegramUserId);
   return c.json({
     ok: true,
     user: {
@@ -55,6 +56,8 @@ app.post('/api/me', async (c) => {
       verificationStatus: user.user.verificationStatus,
       accessLevel: user.user.accessLevel,
       discountEmail: user.user.discountEmail,
+      discountEmailSentAt: discountEmailState.discountEmailSentAt,
+      discountEmailStatus: getDiscountEmailStatus(user.user.discountEmail, discountEmailState.discountEmailSentAt),
       features: { xtCard48Discount: user.user.verificationStatus === 'verified' },
     },
     verificationFlow: {
@@ -190,7 +193,12 @@ app.post('/api/feature/xt-card-48', async (c) => {
   const auth = await authenticateTelegram(c.env, initData ?? '');
   if (!auth.ok) return c.json(auth, 401);
   const discount = getDiscountAccessCopy(auth.user.verificationStatus === 'verified');
-  return c.json({ ok: true, ...discount });
+  const discountEmailState = await getDiscountEmailState(c.env, auth.user.telegramUserId);
+  return c.json({
+    ok: true,
+    ...discount,
+    discountEmailStatus: getDiscountEmailStatus(auth.user.discountEmail, discountEmailState.discountEmailSentAt),
+  });
 });
 
 app.post('/api/telegram/webhook', async (c) => {
@@ -377,7 +385,7 @@ async function applyVerificationResult(
 
 async function getUser(env: Env, telegramUserId: string) {
   const row = await env.DB.prepare(
-    `SELECT telegram_user_id, verification_status, access_level, discount_email AS discountEmail FROM users WHERE telegram_user_id = ?`,
+    `SELECT telegram_user_id, verification_status, access_level, discount_email AS discountEmail, discount_email_sent_at AS discountEmailSentAt FROM users WHERE telegram_user_id = ?`,
   )
     .bind(telegramUserId)
     .first<{
@@ -385,13 +393,20 @@ async function getUser(env: Env, telegramUserId: string) {
       verification_status: VerificationStatus;
       access_level: string;
       discountEmail: string | null;
+      discountEmailSentAt: string | null;
     }>();
   return {
     telegramUserId,
     verificationStatus: row?.verification_status ?? 'not_verified',
     accessLevel: row?.access_level ?? 'none',
     discountEmail: row?.discountEmail ?? null,
+    discountEmailSentAt: row?.discountEmailSentAt ?? null,
   };
+}
+
+function getDiscountEmailStatus(discountEmail: string | null, discountEmailSentAt: string | null) {
+  if (!discountEmail) return 'none' as const;
+  return discountEmailSentAt ? ('sent' as const) : ('pending_review' as const);
 }
 
 async function sendTelegramMessage(env: Env, chatId: number | string, text: string, replyMarkup?: unknown) {

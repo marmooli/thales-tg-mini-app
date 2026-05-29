@@ -163,6 +163,35 @@ export function registerCrmRoutes<AppEnv extends CrmEnv>(app: Hono<{ Bindings: A
       activity: detail.activity.map((event) => serializeCrmTimelineEvent(event)),
     });
   });
+
+  app.post('/api/crm/users/:telegramUserId/discount-email-status', async (c) => {
+    const auth = await requireCrmAuth(c);
+    if (!auth.ok) return c.json(auth.body, auth.status);
+    if (auth.user.role === 'viewer') {
+      return c.json({ ok: false, message: 'شما اجازه تغییر این وضعیت را ندارید.' }, 403);
+    }
+
+    const telegramUserId = c.req.param('telegramUserId');
+    const body = await c.req.json<{ status?: 'sent' | 'pending_review' }>().catch(() => ({ status: '' }));
+    const status = body.status === 'sent' || body.status === 'pending_review' ? body.status : '';
+    if (!status) {
+      return c.json({ ok: false, message: 'وضعیت نامعتبر است.' }, 400);
+    }
+
+    const updated = await setDiscountEmailStatus(c.env, telegramUserId, status);
+    if (!updated.ok) return c.json({ ok: false, message: updated.message }, updated.status);
+
+    await logCrmEvent(c.env, {
+      eventType: status === 'sent' ? 'crm_mark_discount_email_sent' : 'crm_mark_discount_email_pending_review',
+      crmUserId: auth.user.id,
+      actorRole: auth.user.role,
+      telegramUserId,
+      title: status === 'sent' ? 'ایمیل تخفیف ارسال شد' : 'ایمیل تخفیف به در دست بررسی بازگشت',
+      details: { telegramUserId, status },
+    });
+
+    return c.json({ ok: true, discountEmailStatus: status, discountEmailSentAt: updated.discountEmailSentAt });
+  });
 }
 
 async function loginCrmUser<AppEnv extends CrmEnv>(
@@ -474,6 +503,8 @@ async function getCrmUserDetail(env: CrmEnv, telegramUserId: string) {
       u.first_name AS firstName,
       u.last_name AS lastName,
       u.xt_uid AS xtUid,
+      u.discount_email AS discountEmail,
+      u.discount_email_sent_at AS discountEmailSentAt,
       u.verification_status AS verificationStatus,
       u.access_level AS accessLevel,
       u.created_at AS createdAt,
@@ -506,6 +537,33 @@ async function getCrmUserDetail(env: CrmEnv, telegramUserId: string) {
     user: { ...user, lastLoginAt: null },
     activity: activity.results ?? [],
   };
+}
+
+async function setDiscountEmailStatus(env: CrmEnv, telegramUserId: string, status: 'sent' | 'pending_review') {
+  const current = await env.DB.prepare(
+    `SELECT discount_email AS discountEmail FROM users WHERE telegram_user_id = ?`,
+  )
+    .bind(telegramUserId)
+    .first<{ discountEmail: string | null }>();
+
+  if (!current) {
+    return { ok: false as const, status: 404 as const, message: 'کاربر پیدا نشد.' };
+  }
+  if (!current.discountEmail) {
+    return { ok: false as const, status: 400 as const, message: 'ابتدا ایمیل کاربر را ذخیره کنید.' };
+  }
+
+  const now = new Date().toISOString();
+  const sentAt = status === 'sent' ? now : null;
+  await env.DB.prepare(
+    `UPDATE users
+     SET discount_email_sent_at = ?, updated_at = ?
+     WHERE telegram_user_id = ?`,
+  )
+    .bind(sentAt, now, telegramUserId)
+    .run();
+
+  return { ok: true as const, discountEmailSentAt: sentAt };
 }
 
 export async function logCrmEvent(

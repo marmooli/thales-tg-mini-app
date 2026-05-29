@@ -25,6 +25,8 @@ type CrmListRow = {
   firstName: string | null;
   lastName: string | null;
   xtUid: string | null;
+  discountEmail: string | null;
+  discountEmailSentAt: string | null;
   verificationStatus: string;
   accessLevel: string;
   createdAt: string;
@@ -60,10 +62,10 @@ type CrmDetailResponse =
         telegramUserId: string | null;
         xtUid: string | null;
         actorRole: string | null;
-        details: unknown;
-        createdAt: string;
-      }>;
-    }
+      details: unknown;
+      createdAt: string;
+    }>;
+  }
   | { ok: false; message: string };
 
 type CrmDetailData = Extract<CrmDetailResponse, { ok: true }>;
@@ -72,6 +74,8 @@ type CrmRoute =
   | { kind: 'login' }
   | { kind: 'users' }
   | { kind: 'detail'; telegramUserId: string };
+
+type DiscountEmailStatus = 'none' | 'pending_review' | 'sent';
 
 type Filters = {
   search: string;
@@ -319,6 +323,7 @@ export function CrmApp() {
             />
           ) : route.kind === 'detail' ? (
             <UserDetailView
+              currentUserRole={currentUser.role}
               telegramUserId={route.telegramUserId}
               detail={detail}
               detailLoading={detailLoading}
@@ -594,12 +599,14 @@ function UsersView({
 }
 
 function UserDetailView({
+  currentUserRole,
   telegramUserId,
   detail,
   detailLoading,
   detailError,
   onBack,
 }: {
+  currentUserRole: CrmRole;
   telegramUserId: string;
   detail: CrmDetailData | null;
   detailLoading: boolean;
@@ -608,6 +615,32 @@ function UserDetailView({
 }) {
   const user = detail?.user;
   const activity = detail?.activity ?? [];
+  const canEditDiscountEmail = currentUserRole !== 'viewer';
+  const [discountEmailSaving, setDiscountEmailSaving] = useState(false);
+  const [discountEmailActionError, setDiscountEmailActionError] = useState<string | null>(null);
+
+  async function updateDiscountEmailStatus(status: 'sent' | 'pending_review') {
+    setDiscountEmailSaving(true);
+    setDiscountEmailActionError(null);
+    try {
+      const response = await fetch(`/api/crm/users/${encodeURIComponent(telegramUserId)}/discount-email-status`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      const data = (await response.json()) as { ok: boolean; message?: string; discountEmailSentAt?: string | null };
+      if (!response.ok || !data.ok) {
+        setDiscountEmailActionError(data.message ?? 'به‌روزرسانی وضعیت انجام نشد.');
+        return;
+      }
+      window.location.reload();
+    } catch {
+      setDiscountEmailActionError('به‌روزرسانی وضعیت انجام نشد.');
+    } finally {
+      setDiscountEmailSaving(false);
+    }
+  }
 
   return (
     <div className="crm-stack">
@@ -658,6 +691,36 @@ function UserDetailView({
               </dl>
             </article>
           </section>
+
+          {user.discountEmail ? (
+            <section className="crm-detail-card stack">
+              <h3>وضعیت ایمیل تخفیف</h3>
+              <dl>
+                <dt>ایمیل ذخیره‌شده</dt>
+                <dd>{user.discountEmail}</dd>
+                <dt>وضعیت</dt>
+                <dd>{user.discountEmailSentAt ? <span className="crm-status crm-status-verified">ارسال شده</span> : <span className="crm-status crm-status-pending_review">در دست بررسی</span>}</dd>
+                <dt>آخرین تغییر وضعیت</dt>
+                <dd>{user.discountEmailSentAt ? formatDateTime(user.discountEmailSentAt) : '—'}</dd>
+              </dl>
+              {canEditDiscountEmail ? (
+                <div className="crm-inline-actions">
+                  <button className="primary" type="button" onClick={() => void updateDiscountEmailStatus('sent')} disabled={discountEmailSaving}>
+                    ایمیل ارسال شد
+                  </button>
+                  <button
+                    className="secondary"
+                    type="button"
+                    onClick={() => void updateDiscountEmailStatus('pending_review')}
+                    disabled={discountEmailSaving}
+                  >
+                    بازگشت به بررسی
+                  </button>
+                </div>
+              ) : null}
+              {discountEmailActionError ? <p className="crm-feedback crm-feedback-error">{discountEmailActionError}</p> : null}
+            </section>
+          ) : null}
 
           <section className="crm-detail-card">
             <h3>تایم‌لاین فعالیت</h3>

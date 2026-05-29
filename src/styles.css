@@ -456,6 +456,14 @@ button:disabled {
   color: #fff0ad;
 }
 
+.discount-review-badge {
+  display: block;
+  margin-top: 8px;
+  color: #22c55e;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
 .discount-success-line {
   font-weight: 800;
   color: #22c55e;
@@ -846,6 +854,12 @@ button:disabled {
   padding: 16px;
   display: grid;
   gap: 14px;
+}
+
+.crm-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .crm-detail-card dl {
