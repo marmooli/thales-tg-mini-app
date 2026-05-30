@@ -99,10 +99,11 @@ const INITIAL_FILTERS: Filters = {
 };
 
 const ROUTE_PREFIX = '/crm';
-const tableColumns: Array<{ key: keyof CrmListRow | 'actions'; label: string }> = [
+export const CRM_MAIN_TABLE_COLUMNS: Array<{ key: keyof CrmListRow | 'actions'; label: string }> = [
   { key: 'telegramUserId', label: 'شناسه تلگرام' },
   { key: 'telegramUsername', label: 'یوزرنیم' },
   { key: 'xtUid', label: 'شناسه XT' },
+  { key: 'discountEmail', label: 'ایمیل تخفیف' },
   { key: 'verificationStatus', label: 'وضعیت' },
   { key: 'accessLevel', label: 'سطح دسترسی' },
   { key: 'updatedAt', label: 'آخرین تغییر' },
@@ -535,7 +536,7 @@ function UsersView({
         <table className="crm-table">
           <thead>
             <tr>
-              {tableColumns.map((column) => (
+              {CRM_MAIN_TABLE_COLUMNS.map((column) => (
                 <th key={column.key}>{column.label}</th>
               ))}
             </tr>
@@ -543,13 +544,13 @@ function UsersView({
           <tbody>
             {listLoading ? (
               <tr>
-                <td colSpan={tableColumns.length} className="crm-empty">
+                <td colSpan={CRM_MAIN_TABLE_COLUMNS.length} className="crm-empty">
                   در حال دریافت اطلاعات...
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={tableColumns.length} className="crm-empty">
+                <td colSpan={CRM_MAIN_TABLE_COLUMNS.length} className="crm-empty">
                   داده‌ای برای نمایش وجود ندارد.
                 </td>
               </tr>
@@ -559,6 +560,7 @@ function UsersView({
                   <td>{user.telegramUserId}</td>
                   <td>{user.telegramUsername ?? '—'}</td>
                   <td>{user.xtUid ?? '—'}</td>
+                  <td>{user.discountEmail ?? '—'}</td>
                   <td>{renderStatusBadge(user.verificationStatus)}</td>
                   <td>{user.accessLevel}</td>
                   <td>{formatDateTime(user.updatedAt)}</td>

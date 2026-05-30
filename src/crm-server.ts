@@ -549,6 +549,7 @@ async function listCrmUsers(env: CrmEnv, filters: {
       u.first_name AS firstName,
       u.last_name AS lastName,
       u.xt_uid AS xtUid,
+      u.discount_email AS discountEmail,
       u.verification_status AS verificationStatus,
       u.access_level AS accessLevel,
       u.coupon_sent_at AS couponSentAt,

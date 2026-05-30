@@ -24,6 +24,7 @@ const sampleUsers: CrmUserListRow[] = [
     firstName: 'Carol',
     lastName: 'C',
     xtUid: 'CCC333',
+    discountEmail: 'carol@example.com',
     verificationStatus: 'verified',
     accessLevel: 'verified_referral',
     createdAt: '2026-05-28T10:00:00.000Z',
@@ -109,7 +110,7 @@ describe('crm logic', () => {
 
   it('builds a CSV from CRM user rows', () => {
     const csv = buildCrmUsersCsv(sampleUsers.slice(0, 1));
-    expect(csv).toContain('telegramUserId,telegramUsername,firstName,lastName,xtUid,verificationStatus,accessLevel,createdAt,updatedAt,verifiedAt');
-    expect(csv).toContain('300,carol,Carol,C,CCC333,verified,verified_referral');
+    expect(csv).toContain('telegramUserId,telegramUsername,firstName,lastName,xtUid,discountEmail,verificationStatus,accessLevel,createdAt,updatedAt,verifiedAt');
+    expect(csv).toContain('300,carol,Carol,C,CCC333,carol@example.com,verified,verified_referral');
   });
 });
