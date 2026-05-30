@@ -470,7 +470,7 @@ function MiniApp() {
             title={getXtUidFlowPageTitle(route)}
             imageSrc={xtUidGuideImageUrl}
             imageAlt="راهنمای پیدا کردن UID"
-            onBack={() => navigateTo(setRoute, '/verify')}
+            onBack={() => navigateTo(setRoute, '/')}
           />
         </Shell>
       );
@@ -535,7 +535,7 @@ function MiniApp() {
           <RouteSupportPage
             title={getXtUidFlowPageTitle(route)}
             supportUrl={supportTelegramUrl}
-            onBack={() => navigateTo(setRoute, '/verify')}
+            onBack={() => navigateTo(setRoute, '/')}
           />
         </Shell>
       );
@@ -649,6 +649,8 @@ function MiniApp() {
           <p>{discountCopy?.body ?? copy.locked}</p>
         )}
       </section>
+
+      <HomeSupportCard status={status} onOpenSupport={() => navigateTo(setRoute, '/support')} />
     </Shell>
   );
 }
@@ -702,6 +704,67 @@ export function HomeVerificationEntryCard({
 }) {
   if (status === 'verified') return null;
   return <VerificationEntryCard onOpenVerification={onOpenVerification} />;
+}
+
+export function HomeSupportCard({
+  status,
+  onOpenSupport,
+}: {
+  status: Status;
+  onOpenSupport: () => void;
+}) {
+  const unlocked = status === 'verified';
+
+  return (
+    <section className="card stack support-entry-card">
+      <div className="section-title">
+        <h2>{copy.supportTitle}</h2>
+        <div className={`status-lock ${unlocked ? 'status-lock-open' : 'status-lock-closed'}`} aria-hidden="true">
+          {unlocked ? (
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M8 11V8a4 4 0 0 1 4-4c1.7 0 3.2 1 3.8 2.6"
+                fill="none"
+                stroke="#22c55e"
+                strokeWidth="2.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M4.5 10.5h9.8a2.2 2.2 0 0 1 2.2 2.2v5.8a2.2 2.2 0 0 1-2.2 2.2H4.5a2.2 2.2 0 0 1-2.2-2.2v-5.8a2.2 2.2 0 0 1 2.2-2.2Z"
+                fill="none"
+                stroke="#22c55e"
+                strokeWidth="2.3"
+                strokeLinejoin="round"
+              />
+              <circle cx="9.4" cy="15.4" r="1.2" fill="#22c55e" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M8 11V8a4 4 0 0 1 8 0v3"
+                fill="none"
+                stroke="#ef4444"
+                strokeWidth="2.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <rect x="4.5" y="10.5" width="13" height="10" rx="2.2" fill="none" stroke="#ef4444" strokeWidth="2.3" />
+              <circle cx="9.4" cy="15.4" r="1.2" fill="#ef4444" />
+            </svg>
+          )}
+        </div>
+      </div>
+      <p>{copy.supportSubtitle}</p>
+      {unlocked ? (
+        <button className="primary support-entry-button" type="button" onClick={onOpenSupport}>
+          {copy.support}
+        </button>
+      ) : (
+        <p className="route-guide-copy">{copy.supportLocked}</p>
+      )}
+    </section>
+  );
 }
 
 export function RouteVerificationPage({
@@ -865,12 +928,12 @@ export function RouteSupportPage({
         <div className="section-title route-guide-title">
           <h2>{title}</h2>
         </div>
+        <p className="route-guide-copy">{copy.supportPageLead1}</p>
         <p className="route-guide-copy">
-          برای دریافت پشتیبانی مستقیماً از طریق تلگرام با آقای صامتی (
+          {copy.supportPageLead2}{' '}
           <a href={supportUrl} target="_blank" rel="noreferrer">
             {supportUrl}
           </a>
-          ) از پشتیبانی طالس تماس بگیرید و مورد خود را با ایشان مطرح کنید تا پیگیری بشود.
         </p>
         <a className="secondary xt-helper-button route-guide-button" href={supportUrl} target="_blank" rel="noreferrer">
           باز کردن چت

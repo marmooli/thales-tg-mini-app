@@ -43,7 +43,7 @@ describe('xt uid flow helpers', () => {
     expect(getXtUidFlowPageTitle('xt-campaign')).toBe('صفحه فرود XT Card');
     expect(getXtUidFlowPageTitle('xt-uid-help')).toBe('راهنمای پیدا کردن UID');
     expect(getXtUidFlowPageTitle('xt-registration-guide')).toBe('راهنمای ثبت‌نام با کد طالس');
-    expect(getXtUidFlowPageTitle('support')).toBe('تماس با پشتیبانی');
+    expect(getXtUidFlowPageTitle('support')).toBe('پشتیبانی اختصاصی');
     expect(getXtUidFlowPageTitle('xt-card-discount-process')).toBe('فرایند دریافت تخفیف ۳۸ دلاری کارت XT');
     expect(getXtUidFlowPageTitle('xt-card-coupon-video')).toBe('ویدیوی راهنمای فعال کردن رایگان کارت');
     expect(getXtUidFlowBackLabel()).toBe('بازگشت');
@@ -84,9 +84,11 @@ describe('xt uid flow helpers', () => {
 
     const {
       HomeVerificationEntryCard,
+      HomeSupportCard,
       RoutePlaceholderPage,
       RouteGuidePage,
       RouteRegistrationGuidePage,
+      RouteSupportPage,
       RouteVerificationPage,
       VerificationEntryCard,
     } = await import('../src/app');
@@ -102,6 +104,16 @@ describe('xt uid flow helpers', () => {
 
     expect(hiddenHtml).toBe('');
     expect(visibleHtml).toContain('\u062a\u0623\u06cc\u06cc\u062f \u0634\u0646\u0627\u0633\u0647');
+
+    const lockedSupportHtml = renderToStaticMarkup(
+      <HomeSupportCard status="not_verified" onOpenSupport={() => undefined} />,
+    );
+    const unlockedSupportHtml = renderToStaticMarkup(<HomeSupportCard status="verified" onOpenSupport={() => undefined} />);
+
+    expect(lockedSupportHtml).toContain('پشتیبانی اختصاصی');
+    expect(lockedSupportHtml).toContain('این بخش فقط پس از تأیید شناسه در دسترس است.');
+    expect(lockedSupportHtml).not.toContain('تماس با پشتیبانی');
+    expect(unlockedSupportHtml).toContain('تماس با پشتیبانی');
 
     const html = renderToStaticMarkup(
       <RoutePlaceholderPage title="راهنمای پیدا کردن UID" onBack={() => undefined} />,
@@ -133,6 +145,14 @@ describe('xt uid flow helpers', () => {
     expect(registrationHtml).toContain('ثبت‌نام کاربران خارج از ایران');
     expect(registrationHtml).toContain('پس از بازکردن حساب با کد طالس مجدداً به مینی‌اپ بازگردید');
     expect(registrationHtml).toContain('https://www.xtcorenet.com/fa/accounts/register?ref=THALES3');
+
+    const supportHtml = renderToStaticMarkup(
+      <RouteSupportPage title="پشتیبانی اختصاصی" supportUrl="https://t.me/Ssameti" onBack={() => undefined} />,
+    );
+
+    expect(supportHtml).toContain('پشتیبانی اختصاصی');
+    expect(supportHtml).toContain('https://t.me/Ssameti');
+    expect(supportHtml).toContain('باز کردن چت');
 
     const verifyHtml = renderToStaticMarkup(
       <RouteVerificationPage

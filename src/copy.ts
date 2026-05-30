@@ -11,6 +11,13 @@ export const copy = {
   helperUid: 'راهنمای پیدا کردن UID',
   helperRegistration: 'راهنمای ثبت‌نام با کد طالس',
   support: 'تماس با پشتیبانی',
+  supportTitle: 'پشتیبانی اختصاصی',
+  supportSubtitle: 'هر پرسشی دارید یا هر کمکی لازم دارید با ما مطرح کنید',
+  supportLocked: 'این بخش فقط پس از تأیید شناسه در دسترس است.',
+  supportPageLead1:
+    'شما می‌توانید هر پرسشی دارید با ما مطرح کنید و هر پشتیبانی که لازم دارید ما را در جریان بگذارید.',
+  supportPageLead2:
+    'برای این منظور مستقیماً در تلگرام با آقای صامتی از تیم طالس تماس بگیرید و پیام خود را ارسال نمایید.',
   back: 'بازگشت',
   loading: 'در حال بررسی...',
   discountTitle: 'دریافت تخفیف ۳۸ دلاری کارت XT',
@@ -45,7 +52,7 @@ export const copy = {
   },
   routeUidHelpTitle: 'راهنمای پیدا کردن UID',
   routeRegistrationTitle: 'راهنمای ثبت‌نام با کد طالس',
-  routeSupportTitle: 'تماس با پشتیبانی',
+  routeSupportTitle: 'پشتیبانی اختصاصی',
   routeDiscountProcessTitle: 'فرایند دریافت تخفیف ۳۸ دلاری کارت XT',
   routeDiscountVideoTitle: 'ویدیوی راهنمای فعال کردن رایگان کارت',
   routePlaceholder: 'این صفحه فعلاً خالی است.',

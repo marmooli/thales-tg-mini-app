@@ -88,7 +88,7 @@ export function getXtUidFlowPageTitle(route: Exclude<XtUidFlowRoute, 'main'>) {
     case 'xt-registration-guide':
       return 'راهنمای ثبت‌نام با کد طالس';
     case 'support':
-      return 'تماس با پشتیبانی';
+      return 'پشتیبانی اختصاصی';
     case 'xt-card-discount-process':
       return 'فرایند دریافت تخفیف ۳۸ دلاری کارت XT';
     case 'xt-card-coupon-video':
@@ -125,7 +125,7 @@ export function getXtUidFlowNavigationEvent(route: Exclude<XtUidFlowRoute, 'main
     case 'support':
       return {
         eventType: 'xt_support_opened',
-        title: 'مشاهده صفحه پشتیبانی',
+        title: 'مشاهده صفحه پشتیبانی اختصاصی',
       } as const;
     case 'xt-card-discount-process':
       return {

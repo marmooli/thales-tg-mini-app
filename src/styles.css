@@ -445,6 +445,21 @@ button:disabled {
   border-width: 1.5px;
 }
 
+.support-entry-card {
+  display: grid;
+  gap: 12px;
+}
+
+.support-entry-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  color: #090909;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
 .campaign-entry-shell {
   display: grid;
   gap: 12px;
